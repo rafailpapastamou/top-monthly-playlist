@@ -3,11 +3,12 @@ body {
   background-color: #494949;
   color: #fff;
   display: flex;
-  flex-direction: column; /* Ensures items are stacked vertically */
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
   margin: 0;
+  overflow: hidden; /* Prevent scrolling */
 }
 
 .container {
@@ -26,13 +27,15 @@ p {
   margin-bottom: 20px;
 }
 
-.btn {
+.btn,
+.btn_red {
   text-decoration: none;
   color: #fff;
   background-color: #1db954;
   padding: 10px 20px;
   border-radius: 50px;
   transition: background-color 0.3s ease;
+  margin: 5px; /* Add margin to buttons */
 }
 
 .btn:hover {
@@ -40,16 +43,18 @@ p {
 }
 
 .btn_red {
-  text-decoration: none;
-  color: #fff;
   background-color: red;
-  padding: 10px 20px;
-  border-radius: 50px;
-  transition: background-color 0.3s ease;
 }
 
 .btn_red:hover {
   background-color: rgb(182, 27, 27);
+}
+
+/* Container for buttons */
+.button-container {
+  display: flex;
+  flex-wrap: wrap; /* Ensure buttons wrap on smaller screens */
+  justify-content: center;
 }
 
 /* New styles for link container */
