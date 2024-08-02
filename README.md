@@ -16,7 +16,7 @@ You can visit the app [here](https://spotify-top-monthly-playlist.onrender.com/)
 
 ## Technologies Used
 
-- MySQL
+- Python
 - HTML
 - CSS
 - [Render](https://render.com/)
