@@ -56,7 +56,11 @@ def create_or_update_playlist():
     user_id = sp.current_user()['id']
     playlist_id = get_playlist_id(sp, user_id)
 
-    return render_template('options.html', playlist_exists=bool(playlist_id))
+    if playlist_id:
+        playlist = sp.playlist(playlist_id)
+        playlist_name = playlist['name']
+
+    return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name)
 
 @app.route('/create_playlist')
 def create_playlist():
@@ -75,7 +79,7 @@ def create_playlist():
     now = datetime.datetime.now()
     last_month = now - relativedelta(months=1)
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
-    playlist_description = "This playlist was created automatically using a script made by rafail."
+    playlist_description = "This playlist was created automatically using this: https://shorturl.at/KUHCh"
 
     # Create a new playlist
     playlist = sp.user_playlist_create(user_id, playlist_name, public=True, description=playlist_description)

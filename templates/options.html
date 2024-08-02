@@ -15,16 +15,18 @@
       {% if playlist_exists %}
       <p>
         You already have a playlist created from this website. You can update it
-        if you want.
+        if you want. The current playlist name is "{{ playlist_name }}".
       </p>
+      <a href="{{ url_for('update_playlist') }}" class="btn">Update Playlist</a>
       {% else %}
       <p>
-        You don't have a playlist created from this website yet. You can create
-        it now.
+        You can create your top monthly playlist by clicking the "Create
+        Playlist" button below. Otherwise, you can sign up for the automated
+        playlist updates where every 1st of the month your top monthly playlists
+        gets updated automatically.
       </p>
-      {% endif %}
       <a href="{{ url_for('create_playlist') }}" class="btn">Create Playlist</a>
-      <a href="{{ url_for('update_playlist') }}" class="btn">Update Playlist</a>
+      {% endif %}
       <a href="{{ url_for('signup_auto_update') }}" class="btn"
         >Sign Up for Automatic Updates</a
       >
