@@ -55,6 +55,7 @@ def create_or_update_playlist():
     sp = Spotify(auth=token_info['access_token'])
     user_id = sp.current_user()['id']
     playlist_id = get_playlist_id(sp, user_id)
+    playlist_name = None
 
     if playlist_id:
         playlist = sp.playlist(playlist_id)
