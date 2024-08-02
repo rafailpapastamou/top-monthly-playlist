@@ -120,9 +120,12 @@ def update_playlist():
     if playlist_id:
         sp.user_playlist_change_details(user_id, playlist_id, name=playlist_name, description=playlist_description)
         sp.playlist_replace_items(playlist_id, top_tracks)
-        return f"Playlist '{playlist_name}' updated successfully!"
+        message = f"Playlist '{playlist_name}' updated successfully!"
+        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
+        return render_template('updated_playlist.html', message=message, playlist_exists=True, playlist_name=playlist_name, playlist_url=playlist_url)
     else:
-        return "No existing playlist to update."
+        message = f"No existing playlist to update."
+        return render_template('options.html', message=message)
 
 @app.route('/delete_playlist')
 def delete_playlist():
