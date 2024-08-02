@@ -65,7 +65,7 @@ p {
 .links a {
   color: #1db954;
   text-decoration: none;
-  margin: 0 5px; /* Adjust spacing between links */
+  margin: 0;
 }
 
 .links a:hover {
