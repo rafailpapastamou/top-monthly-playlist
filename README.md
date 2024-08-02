@@ -1,8 +1,5 @@
 # Spotify Top Monthly Playlist
 
-<p align="center">
-  <img src="" width="20%">
-</p>
 This app allows you to create a Spotify playlist with your top monthly songs automatically.
 
 ## Features
