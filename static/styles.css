@@ -3,6 +3,7 @@ body {
   background-color: #494949;
   color: #fff;
   display: flex;
+  flex-direction: column; /* Ensures items are stacked vertically */
   justify-content: center;
   align-items: center;
   height: 100vh;
@@ -15,17 +16,6 @@ body {
   background-color: #191414;
   border-radius: 8px;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-}
-
-footer {
-  text-align: center;
-  padding: 20px;
-  background-color: #f9f9f9;
-  border-top: 1px solid #ddd;
-}
-
-footer p {
-  margin: 0;
 }
 
 h1 {
@@ -60,4 +50,24 @@ p {
 
 .btn_red:hover {
   background-color: rgb(182, 27, 27);
+}
+
+/* New styles for link container */
+.links {
+  text-align: center;
+  margin-top: 20px; /* Adjust space between the container and the links */
+}
+
+.links p {
+  margin: 0; /* Remove default margin to avoid extra space */
+}
+
+.links a {
+  color: #1db954;
+  text-decoration: none;
+  margin: 0 5px; /* Adjust spacing between links */
+}
+
+.links a:hover {
+  text-decoration: underline;
 }
