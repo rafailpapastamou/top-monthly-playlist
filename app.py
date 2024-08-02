@@ -20,19 +20,6 @@ def get_spotify_oauth():
         scope='user-top-read playlist-modify-public playlist-modify-private'
     )
 
-def get_spotify_client():
-    if 'token_info' not in session:
-        return redirect(url_for('login'))
-    
-    token_info = session['token_info']
-    return Spotify(auth=token_info['access_token'])
-
-def refresh_token():
-    sp_oauth = get_spotify_oauth()
-    token_info = session.get('token_info')
-    if token_info:
-        sp_oauth.refresh_access_token(token_info['refresh_token'])
-
 def get_playlist_id(sp, user_id, playlist_prefix="My Monthly Top Tracks"):
     playlists = sp.user_playlists(user_id)
     for playlist in playlists['items']:
@@ -65,7 +52,11 @@ def callback():
 
 @app.route('/create_or_update_playlist')
 def create_or_update_playlist():
-    sp = get_spotify_client()
+    if 'token_info' not in session:
+        return redirect(url_for('login'))
+    
+    token_info = session['token_info']
+    sp = Spotify(auth=token_info['access_token'])
     user_id = sp.current_user()['id']
     playlist_id = get_playlist_id(sp, user_id)
     playlist_name = None
@@ -78,21 +69,30 @@ def create_or_update_playlist():
 
 @app.route('/create_playlist')
 def create_playlist():
-    sp = get_spotify_client()
+    if 'token_info' not in session:
+        return redirect(url_for('login'))
+    
+    token_info = session['token_info']
+    sp = Spotify(auth=token_info['access_token'])
+
+    # Determine the playlist name for the last month
     user_id = sp.current_user()['id']
     now = datetime.datetime.now()
     last_month = now - relativedelta(months=1)
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
     playlist_description = "This playlist was created automatically using this: https://shorturl.at/KUHCh"
 
+    # Check if the playlist already exists
     playlist_id = get_playlist_id(sp, user_id, playlist_prefix=playlist_name)
     if playlist_id:
         message = f"Playlist '{playlist_name}' already exists."
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
     else:
+        # Get the top tracks of the last month
         results = sp.current_user_top_tracks(time_range='short_term', limit=50)
         top_tracks = [track['uri'] for track in results['items']]
 
+        # Create a new playlist
         playlist = sp.user_playlist_create(user_id, playlist_name, public=True, description=playlist_description)
         sp.playlist_add_items(playlist['id'], top_tracks)
         playlist_id = get_playlist_id(sp, user_id, playlist_prefix=playlist_name)
@@ -100,7 +100,6 @@ def create_playlist():
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
     return render_template('created_playlist.html', message=message, playlist_exists=True, playlist_name=playlist_name, playlist_url=playlist_url)
-
 
 @app.route('/update_playlist')
 def update_playlist():
