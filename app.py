@@ -29,14 +29,12 @@ def get_playlist_id(sp, user_id, playlist_prefix="My Monthly Top Tracks"):
 
 @app.route('/')
 def index():
-    # return '<a href="/login">Login with Spotify</a>'
     return render_template('index.html')
 
 @app.route('/login')
 def login():
     sp_oauth = get_spotify_oauth()
     auth_url = sp_oauth.get_authorize_url()
-    print(f"Authorization URL: {auth_url}")  # Debug statement
     return redirect(auth_url)
 
 @app.route('/callback')
@@ -55,6 +53,18 @@ def create_or_update_playlist():
     
     token_info = session['token_info']
     sp = Spotify(auth=token_info['access_token'])
+    user_id = sp.current_user()['id']
+    playlist_id = get_playlist_id(sp, user_id)
+
+    return render_template('options.html', playlist_exists=bool(playlist_id))
+
+@app.route('/create_playlist')
+def create_playlist():
+    if 'token_info' not in session:
+        return redirect(url_for('login'))
+    
+    token_info = session['token_info']
+    sp = Spotify(auth=token_info['access_token'])
 
     # Get the top tracks of the last month
     results = sp.current_user_top_tracks(time_range='short_term', limit=50)
@@ -67,18 +77,44 @@ def create_or_update_playlist():
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
     playlist_description = "This playlist was created automatically using a script made by rafail."
 
+    # Create a new playlist
+    playlist = sp.user_playlist_create(user_id, playlist_name, public=True, description=playlist_description)
+    sp.playlist_add_items(playlist['id'], top_tracks)
+
+    return f"Playlist '{playlist_name}' created successfully!"
+
+@app.route('/update_playlist')
+def update_playlist():
+    if 'token_info' not in session:
+        return redirect(url_for('login'))
+    
+    token_info = session['token_info']
+    sp = Spotify(auth=token_info['access_token'])
+
+    # Get the top tracks of the last month
+    results = sp.current_user_top_tracks(time_range='short_term', limit=50)
+    top_tracks = [track['uri'] for track in results['items']]
+
+    # Determine the playlist name for the last month
+    user_id = sp.current_user()['id']
+    now = datetime.datetime.now()
+    last_month = now - relativedelta(months=1)
+    playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
+    playlist_description = "This playlist was updated automatically using a script made by rafail."
+
     # Check if the playlist already exists
     playlist_id = get_playlist_id(sp, user_id)
     if playlist_id:
-        # Playlist exists, update its name and tracks
         sp.user_playlist_change_details(user_id, playlist_id, name=playlist_name, description=playlist_description)
         sp.playlist_replace_items(playlist_id, top_tracks)
+        return f"Playlist '{playlist_name}' updated successfully!"
     else:
-        # Playlist does not exist, create a new one
-        playlist = sp.user_playlist_create(user_id, playlist_name, public=True, description=playlist_description)
-        sp.playlist_add_items(playlist['id'], top_tracks)
+        return "No existing playlist to update."
 
-    return f"Playlist '{playlist_name}' created or updated successfully!"
+@app.route('/signup_auto_update')
+def signup_auto_update():
+    # Placeholder for future implementation
+    return "Sign up for automatic monthly updates feature is coming soon!"
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))

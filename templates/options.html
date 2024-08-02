@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spotify Playlist Options</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='styles.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Spotify Playlist Options</h1>
+      {% if playlist_exists %}
+      <p>
+        You already have a playlist created from this website. You can update it
+        if you want.
+      </p>
+      {% else %}
+      <p>
+        You don't have a playlist created from this website yet. You can create
+        it now.
+      </p>
+      {% endif %}
+      <a href="{{ url_for('create_playlist') }}" class="btn">Create Playlist</a>
+      <a href="{{ url_for('update_playlist') }}" class="btn">Update Playlist</a>
+      <a href="{{ url_for('signup_auto_update') }}" class="btn"
+        >Sign Up for Automatic Updates</a
+      >
+    </div>
+  </body>
+</html>
