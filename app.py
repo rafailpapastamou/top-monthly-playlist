@@ -81,7 +81,8 @@ def create_playlist():
     # Check if the playlist already exists
     playlist_id = get_playlist_id(sp, user_id, playlist_prefix=playlist_name)
     if playlist_id:
-        None
+        message = f"Playlist '{playlist_name}' already exists."
+        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
     else:
         # Get the top tracks of the last month
         results = sp.current_user_top_tracks(time_range='short_term', limit=50)
@@ -91,8 +92,9 @@ def create_playlist():
         playlist = sp.user_playlist_create(user_id, playlist_name, public=True, description=playlist_description)
         sp.playlist_add_items(playlist['id'], top_tracks)
         message = f"Playlist '{playlist_name}' created successfully!"
+        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
-    return render_template('created_playlist.html', message=message, playlist_exists=True, playlist_name=playlist_name)
+    return render_template('created_playlist.html', message=message, playlist_exists=True, playlist_name=playlist_name, playlist_url=playlist_url)
 
 @app.route('/update_playlist')
 def update_playlist():
