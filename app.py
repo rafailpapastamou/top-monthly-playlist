@@ -13,7 +13,6 @@ app.secret_key = os.urandom(24)
 
 def get_spotify_oauth():
     redirect_uri = url_for('callback', _external=True)
-    print(f"Redirect URI used: {redirect_uri}")  # Debug statement
     return SpotifyOAuth(
         client_id=os.getenv('SPOTIPY_CLIENT_ID'),
         client_secret=os.getenv('SPOTIPY_CLIENT_SECRET'),
@@ -30,7 +29,8 @@ def get_playlist_id(sp, user_id, playlist_prefix="My Monthly Top Tracks"):
 
 @app.route('/')
 def index():
-    return '<a href="/login">Login with Spotify</a>'
+    # return '<a href="/login">Login with Spotify</a>'
+    return render_template('index.html')
 
 @app.route('/login')
 def login():
