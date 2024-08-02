@@ -114,7 +114,7 @@ def update_playlist():
     now = datetime.datetime.now()
     last_month = now - relativedelta(months=1)
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
-    playlist_description = "This playlist was updated automatically using a script made by rafail."
+    playlist_description = "This playlist was created automatically using this: https://shorturl.at/KUHCh"
 
     # Check if the playlist already exists
     playlist_id = get_playlist_id(sp, user_id)
