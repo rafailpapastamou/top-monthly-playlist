@@ -15,7 +15,8 @@ def get_spotify_oauth():
     return SpotifyOAuth(
         client_id=os.getenv('SPOTIPY_CLIENT_ID'),
         client_secret=os.getenv('SPOTIPY_CLIENT_SECRET'),
-        redirect_uri=url_for('callback', _external=True),
+        # redirect_uri=url_for('callback', _external=True),
+        redirect_uri='https://spotify-top-monthly-playlist.herokuapp.com/callback',
         scope='user-top-read playlist-modify-public playlist-modify-private'
     )
 
