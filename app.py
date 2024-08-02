@@ -12,11 +12,10 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
 def get_spotify_oauth():
-    redirect_uri = url_for('callback', _external=True)
     return SpotifyOAuth(
         client_id=os.getenv('SPOTIPY_CLIENT_ID'),
         client_secret=os.getenv('SPOTIPY_CLIENT_SECRET'),
-        redirect_uri=redirect_uri,
+        redirect_uri=os.getenv('SPOTIPY_REDIRECT_URI'),
         scope='user-top-read playlist-modify-public playlist-modify-private'
     )
 
