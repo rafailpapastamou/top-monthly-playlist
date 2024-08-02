@@ -12,11 +12,12 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
 def get_spotify_oauth():
+    redirect_uri = url_for('callback', _external=True)
+    print(f"Redirect URI used: {redirect_uri}")  # Debug statement
     return SpotifyOAuth(
         client_id=os.getenv('SPOTIPY_CLIENT_ID'),
         client_secret=os.getenv('SPOTIPY_CLIENT_SECRET'),
-        # redirect_uri=url_for('callback', _external=True),
-        redirect_uri='https://spotify-top-monthly-playlist.herokuapp.com/callback',
+        redirect_uri=redirect_uri,
         scope='user-top-read playlist-modify-public playlist-modify-private'
     )
 
@@ -35,6 +36,7 @@ def index():
 def login():
     sp_oauth = get_spotify_oauth()
     auth_url = sp_oauth.get_authorize_url()
+    print(f"Authorization URL: {auth_url}")  # Debug statement
     return redirect(auth_url)
 
 @app.route('/callback')
