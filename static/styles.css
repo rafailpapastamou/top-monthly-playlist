@@ -37,3 +37,16 @@ p {
 .btn:hover {
   background-color: #14833b;
 }
+
+.btn_red {
+  text-decoration: none;
+  color: #fff;
+  background-color: red;
+  padding: 10px 20px;
+  border-radius: 50px;
+  transition: background-color 0.3s ease;
+}
+
+.btn_red:hover {
+  background-color: rgb(182, 27, 27);
+}
