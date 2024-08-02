@@ -91,6 +91,7 @@ def create_playlist():
         # Create a new playlist
         playlist = sp.user_playlist_create(user_id, playlist_name, public=True, description=playlist_description)
         sp.playlist_add_items(playlist['id'], top_tracks)
+        playlist_id = get_playlist_id(sp, user_id, playlist_prefix=playlist_name)
         message = f"Playlist '{playlist_name}' created successfully!"
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
