@@ -13,12 +13,13 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
 # Initialize Spotify OAuth
-sp_oauth = SpotifyOAuth(
-    client_id=os.getenv('SPOTIPY_CLIENT_ID'),
-    client_secret=os.getenv('SPOTIPY_CLIENT_SECRET'),
-    redirect_uri=os.getenv('SPOTIPY_REDIRECT_URI'),
-    scope='playlist-modify-public playlist-modify-private user-library-read'
-)
+def create_spotify_oauth():
+    return SpotifyOAuth(
+        client_id=os.getenv('SPOTIPY_CLIENT_ID'),
+        client_secret=os.getenv('SPOTIPY_CLIENT_SECRET'),
+        redirect_uri=os.getenv('SPOTIPY_REDIRECT_URI'),
+        scope='playlist-modify-public playlist-modify-private user-library-read'
+    )
 
 @app.route('/')
 def index():
@@ -26,27 +27,30 @@ def index():
 
 @app.route('/login')
 def login():
-    if 'token_info' in session:
-        return redirect(url_for('create_or_update_playlist'))
-
+    sp_oauth = create_spotify_oauth()
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 
 @app.route('/callback')
 def callback():
+    sp_oauth = create_spotify_oauth()
+    session.clear()  # Clear session before setting new one
     token_info = sp_oauth.get_access_token(request.args['code'])
+
     if not token_info:
         return redirect(url_for('login'))
 
     session['token_info'] = token_info
+    session.modified = True  # Ensure session data is saved
     return redirect(url_for('create_or_update_playlist'))
 
 @app.route('/create_or_update_playlist')
 def create_or_update_playlist():
-    if 'token_info' not in session:
-        return redirect(url_for('login'))
 
-    token_info = session['token_info']
+    token_info = get_token()
+    if not token_info:
+        return redirect(url_for('login'))
+    
     sp = spotipy.Spotify(auth=token_info['access_token'])
     user_id = sp.current_user()['id']
     playlist_id = get_playlist_id(sp, user_id)
@@ -60,10 +64,10 @@ def create_or_update_playlist():
 
 @app.route('/create_playlist')
 def create_playlist():
-    if 'token_info' not in session:
+    token_info = get_token()
+    if not token_info:
         return redirect(url_for('login'))
     
-    token_info = session['token_info']
     sp = spotipy.Spotify(auth=token_info['access_token'])
 
     user_id = sp.current_user()['id']
@@ -90,10 +94,10 @@ def create_playlist():
 
 @app.route('/update_playlist')
 def update_playlist():
-    if 'token_info' not in session:
+    token_info = get_token()
+    if not token_info:
         return redirect(url_for('login'))
-    
-    token_info = session['token_info']
+
     sp = spotipy.Spotify(auth=token_info['access_token'])
 
     user_id = sp.current_user()['id']
@@ -117,10 +121,10 @@ def update_playlist():
 
 @app.route('/delete_playlist')
 def delete_playlist():
-    if 'token_info' not in session:
+    token_info = get_token()
+    if not token_info:
         return redirect(url_for('login'))
 
-    token_info = session['token_info']
     sp = spotipy.Spotify(auth=token_info['access_token'])
     user_id = sp.current_user()['id']
     playlist_id = get_playlist_id(sp, user_id)
@@ -137,6 +141,20 @@ def delete_playlist():
 def logout():
     session.clear()
     return redirect(url_for('index'))
+
+def get_token():
+    token_info = session.get('token_info', None)
+    if not token_info:
+        return None
+    now = datetime.datetime.now()
+    is_expired = token_info['expires_at'] - now.timestamp() < 60
+
+    if is_expired:
+        sp_oauth = create_spotify_oauth()
+        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+        session['token_info'] = token_info
+
+    return token_info
 
 def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
     playlists = sp.user_playlists(user_id, limit=50)
