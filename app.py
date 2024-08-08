@@ -6,7 +6,7 @@ import datetime
 from dotenv import load_dotenv
 from dateutil.relativedelta import relativedelta
 
-# load_dotenv('variables.env')
+load_dotenv('variables.env')
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
