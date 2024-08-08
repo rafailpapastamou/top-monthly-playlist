@@ -138,10 +138,6 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
-@app.template_filter('json_pretty')
-def json_pretty_filter(value):
-    return json.dumps(value, indent=4, sort_keys=True)
-
 def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
     playlists = sp.user_playlists(user_id, limit=50)
     for playlist in playlists['items']:
