@@ -145,5 +145,6 @@ def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
             return playlist['id']
     return None
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
