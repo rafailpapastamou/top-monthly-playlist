@@ -59,8 +59,7 @@ def create_or_update_playlist():
     
     token_info = session['token_info']
     sp = Spotify(auth=token_info['access_token'])
-    # user_id = sp.current_user()['id']
-    user_id = session['user_id']  # Retrieve user ID from session
+    user_id = sp.current_user()['id']
     playlist_id = get_playlist_id(sp, user_id)
     playlist_name = None
 
@@ -79,8 +78,7 @@ def create_playlist():
     sp = Spotify(auth=token_info['access_token'])
 
     # Determine the playlist name for the last month
-    # user_id = sp.current_user()['id']
-    user_id = session['user_id']  # Retrieve user ID from session
+    user_id = sp.current_user()['id']
     now = datetime.datetime.now()
     last_month = now - relativedelta(months=1)
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
@@ -118,8 +116,7 @@ def update_playlist():
     top_tracks = [track['uri'] for track in results['items']]
 
     # Determine the playlist name for the last month
-    # user_id = sp.current_user()['id']
-    user_id = session['user_id']  # Retrieve user ID from session
+    user_id = sp.current_user()['id']
     now = datetime.datetime.now()
     last_month = now - relativedelta(months=1)
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
@@ -144,8 +141,7 @@ def delete_playlist():
 
     token_info = session['token_info']
     sp = Spotify(auth=token_info['access_token'])
-    # user_id = sp.current_user()['id']
-    user_id = session['user_id']  # Retrieve user ID from session
+    user_id = sp.current_user()['id']
     playlist_id = get_playlist_id(sp, user_id)
 
     if playlist_id:
