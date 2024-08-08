@@ -142,6 +142,10 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
+@app.route('/signup_auto_update')
+def signup_auto_update():
+    message = "You have successfully signed up for automatic updates!"
+
 def get_token():
     token_info = session.get('token_info', None)
     if not token_info:
