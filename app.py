@@ -6,7 +6,7 @@ import datetime
 from dotenv import load_dotenv
 from dateutil.relativedelta import relativedelta
 
-load_dotenv('variables.env')
+# load_dotenv('variables.env')
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -47,7 +47,8 @@ def callback():
     
     # Store token info in session
     session['token_info'] = token_info
-    user_id = Spotify(auth=token_info['access_token']).current_user()['id']
+    sp = Spotify(auth=token_info['access_token'])
+    user_id = sp.current_user()['id']
     session['user_id'] = user_id
     return redirect(url_for('create_or_update_playlist'))
 
