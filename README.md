@@ -12,7 +12,8 @@ This app allows you to create a Spotify playlist with your top monthly songs aut
 
 ## Website Link
 
-You can visit the app [here](https://spotify-top-monthly-playlist.onrender.com/).
+You can visit the app [here](https://spotify-top-monthly-playlist.onrender.com/).<br>
+The app uses the free tier of [Render](https://render.com/) to be deployed so if the website is inactive it takes approximately 50 seconds to become active again. Sorry =(
 
 ## Technologies Used
 
