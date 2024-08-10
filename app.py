@@ -92,24 +92,9 @@ def logout():
         session.pop(f'{user_id}_token_info', None)  # Remove the specific user's token info
     return redirect(url_for('index'))
 
-
 @app.route('/signup_auto_update')
 def signup_auto_update():
     message = "You have successfully signed up for automatic updates!"
-
-def get_token():
-    token_info = session.get('token_info', None)
-    if not token_info:
-        return None
-    now = datetime.datetime.now()
-    is_expired = token_info['expires_at'] - now.timestamp() < 60
-
-    if is_expired:
-        sp_oauth = create_spotify_oauth()
-        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-        session['token_info'] = token_info
-
-    return token_info
 
 def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
     playlists = sp.user_playlists(user_id, limit=50)
