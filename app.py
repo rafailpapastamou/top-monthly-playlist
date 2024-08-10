@@ -47,6 +47,9 @@ def callback():
     sp = spotipy.Spotify(auth=token_info['access_token'])
     user_id = sp.current_user()['id']
 
+    # Print user_id to debug
+    print(f"Logged in user ID: {user_id}")
+
     # Use user-specific session keys
     session[f'{user_id}_token_info'] = token_info
     session.modified = True  # Ensure session data is saved
