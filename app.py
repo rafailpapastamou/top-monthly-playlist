@@ -175,6 +175,7 @@ def signup_auto_update():
 def get_token(user_id):
     token_info = session.get(f'{user_id}_token_info', None)
     if not token_info:
+        print(f"No token found for user: {user_id}")
         return None
 
     now = datetime.datetime.now()
@@ -185,6 +186,7 @@ def get_token(user_id):
         token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
         session[f'{user_id}_token_info'] = token_info
 
+    print(f"Token info for user {user_id}: {token_info}")
     return token_info
 
 def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
