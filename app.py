@@ -25,28 +25,36 @@ def index():
 
 @app.route('/login')
 def login():
+    print("User requested login.")
     sp_oauth = create_spotify_oauth()
     auth_url = sp_oauth.get_authorize_url()
+    print(f"Redirecting to Spotify authorization URL")
     return redirect(auth_url)
 
 @app.route('/callback')
 def callback():
     sp_oauth = create_spotify_oauth()
     code = request.args.get('code')
+    print(f"Received authorization code: {code}")
 
     if not code:
+        print("No authorization code received. Redirecting to login.")
         return redirect(url_for('login'))
 
     token_info = sp_oauth.get_access_token(code)
+    print(f"Token info received: {token_info}")
 
     if not token_info:
+        print("Failed to get token info. Redirecting to login.")
         return redirect(url_for('login'))
 
     sp = spotipy.Spotify(auth=token_info['access_token'])
     user_id = sp.current_user()['id']
+    print(f"Logged in user ID: {user_id}")
 
     # Save token info to the database
     save_token(user_id, token_info)
+    print("Token info saved to database.")
     
     return redirect(url_for('create_or_update_playlist', user_id=user_id))
 
