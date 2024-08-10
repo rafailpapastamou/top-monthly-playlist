@@ -70,6 +70,105 @@ def create_or_update_playlist():
 
     return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name, user_id=user_id)
 
+@app.route('/create_playlist')
+def create_playlist():
+    user_id = request.args.get('user_id')
+    token_info = get_token(user_id)
+
+    if not token_info:
+        return redirect(url_for('login'))
+    sp = spotipy.Spotify(auth=token_info['access_token'])
+
+    # Determine the playlist name for the last month
+    user_id = sp.current_user()['id']
+    now = datetime.datetime.now()
+    last_month = now - relativedelta(months=1)
+    playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
+    playlist_description = "This playlist was created automatically using this: https://spotify-top-monthly-playlist.onrender.com/"
+
+    # Check if the playlist already exists
+    playlist_id = get_playlist_id(sp, user_id, playlist_prefix=playlist_name)
+    if playlist_id:
+        message = f"Playlist '{playlist_name}' already exists."
+        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
+    else:
+        # Get the top tracks of the last month
+        results = sp.current_user_top_tracks(time_range='short_term', limit=50)
+        top_tracks = [track['uri'] for track in results['items']]
+
+        # Create a new playlist
+        playlist = sp.user_playlist_create(user_id, playlist_name, public=True, description=playlist_description)
+        sp.playlist_add_items(playlist['id'], top_tracks)
+        playlist_id = get_playlist_id(sp, user_id, playlist_prefix=playlist_name)
+        message = f"Playlist '{playlist_name}' created successfully!"
+        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
+
+    return render_template('created_playlist.html', message=message, playlist_exists=True, playlist_name=playlist_name, playlist_url=playlist_url)
+
+@app.route('/update_playlist')
+def update_playlist():
+    user_id = request.args.get('user_id')
+    token_info = get_token(user_id)
+
+    if not token_info:
+        return redirect(url_for('login'))
+    
+    sp = spotipy.Spotify(auth=token_info['access_token'])
+
+    # Get the top tracks of the last month
+    results = sp.current_user_top_tracks(time_range='short_term', limit=50)
+    top_tracks = [track['uri'] for track in results['items']]
+
+    # Determine the playlist name for the last month
+    user_id = sp.current_user()['id']
+    now = datetime.datetime.now()
+    last_month = now - relativedelta(months=1)
+    playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
+    playlist_description = "This playlist was created automatically using this: https://spotify-top-monthly-playlist.onrender.com/"
+
+    # Check if the playlist already exists
+    playlist_id = get_playlist_id(sp, user_id)
+    if playlist_id:
+        sp.user_playlist_change_details(user_id, playlist_id, name=playlist_name, description=playlist_description)
+        sp.playlist_replace_items(playlist_id, top_tracks)
+        message = f"Playlist '{playlist_name}' updated successfully!"
+        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
+        return render_template('updated_playlist.html', message=message, playlist_exists=True, playlist_name=playlist_name, playlist_url=playlist_url)
+    else:
+        message = f"No existing playlist to update."
+        return render_template('options.html', message=message)
+    
+@app.route('/delete_playlist')
+def delete_playlist():
+    user_id = request.args.get('user_id')
+    token_info = get_token(user_id)
+
+    if not token_info:
+        return redirect(url_for('login'))
+    
+    sp = spotipy.Spotify(auth=token_info['access_token'])
+    user_id = sp.current_user()['id']
+    playlist_id = get_playlist_id(sp, user_id)
+
+    if playlist_id:
+        sp.current_user_unfollow_playlist(playlist_id)
+        message = "Playlist deleted successfully."
+    else:
+        message = "No playlist found to delete."
+
+    return render_template('options.html', message=message, playlist_exists=False)
+
+@app.route('/logout')
+def logout():
+    user_id = request.args.get('user_id')
+    if user_id:
+        session.pop(f'{user_id}_token_info', None)  # Remove the specific user's token info
+    return redirect(url_for('index'))
+
+@app.route('/signup_auto_update')
+def signup_auto_update():
+    message = "You have successfully signed up for automatic updates!"
+
 def get_token(user_id):
     token_info = session.get(f'{user_id}_token_info', None)
     if not token_info:
@@ -84,17 +183,6 @@ def get_token(user_id):
         session[f'{user_id}_token_info'] = token_info
 
     return token_info
-
-@app.route('/logout')
-def logout():
-    user_id = request.args.get('user_id')
-    if user_id:
-        session.pop(f'{user_id}_token_info', None)  # Remove the specific user's token info
-    return redirect(url_for('index'))
-
-@app.route('/signup_auto_update')
-def signup_auto_update():
-    message = "You have successfully signed up for automatic updates!"
 
 def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
     playlists = sp.user_playlists(user_id, limit=50)
