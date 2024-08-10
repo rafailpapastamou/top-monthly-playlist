@@ -3,11 +3,9 @@ import os
 import datetime
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
-import spotipy.util as util
 from dateutil.relativedelta import relativedelta
-from dotenv import load_dotenv
-
-load_dotenv('variables.env')
+import sqlite3
+import json
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -27,7 +25,6 @@ def index():
 
 @app.route('/login')
 def login():
-    session.clear()  # Clear session data before starting a new login
     sp_oauth = create_spotify_oauth()
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
@@ -48,12 +45,9 @@ def callback():
     sp = spotipy.Spotify(auth=token_info['access_token'])
     user_id = sp.current_user()['id']
 
-    # Print user_id to debug
-    print(f"Logged in user ID: {user_id}")
-
-    # Use user-specific session keys
-    session[f'{user_id}_token_info'] = token_info
-    session.modified = True  # Ensure session data is saved
+    # Save token info to the database
+    save_token(user_id, token_info)
+    
     return redirect(url_for('create_or_update_playlist', user_id=user_id))
 
 @app.route('/create_or_update_playlist')
@@ -81,10 +75,10 @@ def create_playlist():
 
     if not token_info:
         return redirect(url_for('login'))
+    
     sp = spotipy.Spotify(auth=token_info['access_token'])
 
     # Determine the playlist name for the last month
-    user_id = sp.current_user()['id']
     now = datetime.datetime.now()
     last_month = now - relativedelta(months=1)
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
@@ -124,7 +118,6 @@ def update_playlist():
     top_tracks = [track['uri'] for track in results['items']]
 
     # Determine the playlist name for the last month
-    user_id = sp.current_user()['id']
     now = datetime.datetime.now()
     last_month = now - relativedelta(months=1)
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
@@ -141,7 +134,7 @@ def update_playlist():
     else:
         message = f"No existing playlist to update."
         return render_template('options.html', message=message)
-    
+
 @app.route('/delete_playlist')
 def delete_playlist():
     user_id = request.args.get('user_id')
@@ -151,7 +144,6 @@ def delete_playlist():
         return redirect(url_for('login'))
     
     sp = spotipy.Spotify(auth=token_info['access_token'])
-    user_id = sp.current_user()['id']
     playlist_id = get_playlist_id(sp, user_id)
 
     if playlist_id:
@@ -166,29 +158,48 @@ def delete_playlist():
 def logout():
     user_id = request.args.get('user_id')
     if user_id:
-        session.pop(f'{user_id}_token_info', None)  # Remove the specific user's token info
+        # Remove the token from the database
+        delete_token(user_id)
     return redirect(url_for('index'))
 
 @app.route('/signup_auto_update')
 def signup_auto_update():
     message = "You have successfully signed up for automatic updates!"
 
+def save_token(user_id, token_info):
+    conn = sqlite3.connect('data/tokens.db')  # Ensure the path is correct
+    cur = conn.cursor()
+    token_info_json = json.dumps(token_info)
+    cur.execute('''
+        INSERT OR REPLACE INTO tokens (user_id, token_info)
+        VALUES (?, ?);
+    ''', (user_id, token_info_json))
+    conn.commit()
+    cur.close()
+    conn.close()
+
 def get_token(user_id):
-    token_info = session.get(f'{user_id}_token_info', None)
-    if not token_info:
-        print(f"No token found for user: {user_id}")
-        return None
+    conn = sqlite3.connect('data/tokens.db')  # Ensure the path is correct
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT token_info FROM tokens WHERE user_id = ?;
+    ''', (user_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    if row:
+        return json.loads(row[0])
+    return None
 
-    now = datetime.datetime.now()
-    is_expired = token_info['expires_at'] - now.timestamp() < 60
-
-    if is_expired:
-        sp_oauth = create_spotify_oauth()
-        token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
-        session[f'{user_id}_token_info'] = token_info
-
-    print(f"Token info for user {user_id}: {token_info}")
-    return token_info
+def delete_token(user_id):
+    conn = sqlite3.connect('data/tokens.db')  # Ensure the path is correct
+    cur = conn.cursor()
+    cur.execute('''
+        DELETE FROM tokens WHERE user_id = ?;
+    ''', (user_id,))
+    conn.commit()
+    cur.close()
+    conn.close()
 
 def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
     playlists = sp.user_playlists(user_id, limit=50)
