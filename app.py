@@ -27,6 +27,7 @@ def index():
 
 @app.route('/login')
 def login():
+    session.clear()  # Clear session data before starting a new login
     sp_oauth = create_spotify_oauth()
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
