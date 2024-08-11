@@ -14,27 +14,30 @@
       <h1>Spotify Playlist Options</h1>
       {% if playlist_exists %}
       <p>
-        You already have a playlist created from this website named "{{
-        playlist_name }}". You can update it if you want or you can sign up for
-        the auto update of your playlist.
+        You already have a playlist created from this website. You can update it
+        if you want by clicking the button below.
       </p>
       <div class="button-container">
         <a href="{{ url_for('update_playlist') }}" class="btn"
           >Update Playlist</a
         >
+        <p>You can delete your playlist by clicking the button below.</p>
         <a href="{{ url_for('delete_playlist') }}" class="btn btn_red"
           >Delete Playlist</a
         >
       </div>
       {% else %}
       <p>
-        You can create your top monthly playlist by clicking the "Create
-        Playlist" button below. Otherwise, you can sign up for the automated
-        playlist updates where every 1st of the month your top monthly playlist
-        gets updated automatically.
+        Click the button below to create a playlist with your top streamed songs
+        of the last 30 days.
       </p>
       <a href="{{ url_for('create_playlist') }}" class="btn">Create Playlist</a>
       {% endif %}
+      <p>
+        Click the button below if you want every 1st of the month an updated
+        playlist with your top streamed songs to be created automatically. You
+        can opt out anytime you want.
+      </p>
       <a href="{{ url_for('signup_auto_update') }}" class="btn"
         >Sign Up for Automatic Updates</a
       >
