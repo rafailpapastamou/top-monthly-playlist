@@ -14,8 +14,12 @@
       <h1>Spotify Playlist Options</h1>
       {% if playlist_exists %}
       <p>
-        You already have a playlist created from this website. You can update it
-        if you want by clicking the button below.
+        You already have a
+        <a href="{{ playlist_url }}" target="_blank" rel="noopener noreferrer"
+          >playlist</a
+        >
+        created from this website. You can update it if you want by clicking the
+        button below.
       </p>
       <div class="button-container">
         <a href="{{ url_for('update_playlist') }}" class="btn"
