@@ -65,7 +65,8 @@ def callback():
 
     # Create JWT and return it to the client
     token = create_jwt(user_id)
-    return jsonify({'token': token, 'access_token': token_info['access_token']})
+    # return jsonify({'token': token, 'access_token': token_info['access_token']})
+    return redirect(url_for('create_or_update_playlist', token=token))
 
 # Middleware to protect routes
 def token_required(f):
