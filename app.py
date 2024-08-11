@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, render_template, jsonify
+from flask import Flask, redirect, url_for, request, render_template, jsonify, session
 import os
 import datetime
 import spotipy
@@ -64,6 +64,10 @@ def callback():
     sp = spotipy.Spotify(auth=token_info['access_token'])
     user_id = sp.current_user()['id']
 
+    # Store the token in the session
+    session['access_token'] = token_info['access_token']
+    session['user_id'] = user_id
+
     # Create JWT and URL-encode it
     token = create_jwt(user_id)
     encoded_token = quote(token)  # URL-encode the token
@@ -104,14 +108,12 @@ def create_or_update_playlist():
     except Exception as e:
         return jsonify({'message': str(e)}), 403
 
-    # Proceed with Spotify API interactions
-    sp_oauth = create_spotify_oauth()
-    token_info = sp_oauth.get_cached_token()  # This may need adjustments if you're not caching tokens
-
-    if not token_info:
+    # Use the access token from the session
+    access_token = session.get('access_token')
+    if not access_token:
         return redirect(url_for('login'))
 
-    sp = spotipy.Spotify(auth=token_info['access_token'])
+    sp = spotipy.Spotify(auth=access_token)
     playlist_id = get_playlist_id(sp, user_id)
     playlist_name = None
 
@@ -124,7 +126,8 @@ def create_or_update_playlist():
 @app.route('/create_playlist')
 @token_required
 def create_playlist(user_id):
-    access_token = request.headers.get('Authorization')
+    # Use the access token from the session
+    access_token = session.get('access_token')
     sp = spotipy.Spotify(auth=access_token)
 
     # Determine the playlist name for the last month
@@ -155,7 +158,8 @@ def create_playlist(user_id):
 @app.route('/update_playlist')
 @token_required
 def update_playlist(user_id):
-    access_token = request.headers.get('Authorization')
+    # Use the access token from the session
+    access_token = session.get('access_token')
     sp = spotipy.Spotify(auth=access_token)
 
     # Get the top tracks of the last month
@@ -183,7 +187,8 @@ def update_playlist(user_id):
 @app.route('/delete_playlist')
 @token_required
 def delete_playlist(user_id):
-    access_token = request.headers.get('Authorization')
+    # Use the access token from the session
+    access_token = session.get('access_token')
     sp = spotipy.Spotify(auth=access_token)
     playlist_id = get_playlist_id(sp, user_id)
 
@@ -197,6 +202,8 @@ def delete_playlist(user_id):
 
 @app.route('/logout')
 def logout():
+    session.pop('access_token', None)
+    session.pop('user_id', None)
     return redirect(url_for('index'))
 
 @app.route('/signup_auto_update')
