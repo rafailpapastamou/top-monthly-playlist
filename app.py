@@ -93,12 +93,14 @@ def create_or_update_playlist():
 
     playlist_id = get_playlist_id(sp, spotify_user_id)
     playlist_name = None
+    playlist_url = None
 
     if playlist_id:
         playlist = sp.playlist(playlist_id)
         playlist_name = playlist['name']
+        playlist_url = playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
-    return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name)
+    return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name,playlist_url=playlist_url)
 
 @app.route('/create_playlist')
 def create_playlist():
