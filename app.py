@@ -219,6 +219,18 @@ def signup_auto_update():
 
     return redirect(url_for('create_or_update_playlist'))
 
+# For debugging and testing purposes
+@app.route('/show_users')
+def show_users():
+    # Query all users from the database
+    users = User.query.all()
+    
+    # Create a simple HTML table to display the users
+    return render_template('show_users.html', users=users)
+
+def get_all_users_signed_for_auto_updates():
+    return User.query.filter_by(signed_up_for_auto_update=True).all()
+
 def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
     playlists = sp.user_playlists(user_id, limit=50)
     for playlist in playlists['items']:
