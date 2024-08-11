@@ -12,6 +12,18 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
 
 @app.route('/')
 def index():
+    # Check if the access token exists and is valid
+    access_token = os.getenv('token')
+    
+    if access_token:
+        try:
+            sp = spotipy.Spotify(auth=access_token)
+            sp.current_user()  # Make a simple API call to check if the token is still valid
+            return redirect(url_for('create_or_update_playlist'))
+        except spotipy.exceptions.SpotifyException:
+            # Token is invalid or expired, proceed to render index.html
+            pass
+
     return render_template('index.html')
 
 @app.route('/login')
