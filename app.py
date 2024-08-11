@@ -5,28 +5,15 @@ from spotipy.oauth2 import SpotifyOAuth
 import spotipy
 import os
 import datetime
-import jwt
-from urllib.parse import quote, unquote
 from dateutil.relativedelta import relativedelta
+import urllib.parse
+import uuid
+import requests
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///users.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
-
-# User model
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    spotify_user_id = db.Column(db.String(50), unique=True, nullable=False)
-    access_token = db.Column(db.String(255), nullable=False)  # Store the Spotify access token
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
 
 # Initialize Spotify OAuth
 def create_spotify_oauth():
@@ -43,32 +30,35 @@ def index():
 
 @app.route('/login')
 def login():
-    sp_oauth = create_spotify_oauth()
-    auth_url = sp_oauth.get_authorize_url()
-    return redirect(auth_url)
+    authentication_request_params = {
+        'response_type': 'code',
+        'client_id': os.getenv('SPOTIPY_CLIENT_ID'),
+        'redirect_uri': os.getenv('SPOTIPY_REDIRECT_URI'),
+        'scope': 'playlist-modify-public playlist-modify-private user-library-read',
+        'state': str(uuid.uuid4()),
+        'show_dialog': 'true'
+    }
+    auth_url = 'https://accounts.spotify.com/authorize/?' + urllib.parse.urlencode(authentication_request_params)
+
+def get_access_token(authorization_code:str):
+    spotify_request_access_token_url = 'https://accounts.spotify.com/api/token/?'
+    body = {
+        'grant_type': 'authorization_code',
+        'code': 'authorization_code',
+        'client_id': os.getenv('SPOTIPY_CLIENT_ID'),
+        'client_secret': os.getenv('SPOTIPY_CLIENT_SECRET'),
+        'redirect_uri': os.getenv('SPOTIPY_REDIRECT_URI')
+    }
+    response = requests.post(spotify_request_access_token_url, data = body)
+    if response.status_code == 200:
+        return response.json()  
+        raise Exception ('Failed to obtain Access token')
 
 @app.route('/callback')
 def callback():
-    sp_oauth = create_spotify_oauth()
     code = request.args.get('code')
-
-    if not code:
-        return redirect(url_for('login'))
-
-    token_info = sp_oauth.get_access_token(code)
-    access_token = token_info['access_token']
-    sp = spotipy.Spotify(auth=access_token)
-    spotify_user_id = sp.current_user()['id']
-
-    user = User.query.filter_by(spotify_user_id=spotify_user_id).first()
-    if not user:
-        # If the user does not exist, create a new user
-        user = User(spotify_user_id=spotify_user_id, access_token=access_token)
-        db.session.add(user)
-        db.session.commit()
-
-    # Log the user in
-    login_user(user)
+    credentials = get_access_token(authorization_code=code)
+    os.environ['token'] = credentials['access_token']
 
     return redirect(url_for('create_or_update_playlist'))
 
