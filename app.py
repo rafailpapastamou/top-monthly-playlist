@@ -1,33 +1,32 @@
-from flask import Flask, redirect, url_for, request, render_template, jsonify, session
+from flask import Flask, redirect, url_for, request, render_template, session, flash
+from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from flask_sqlalchemy import SQLAlchemy
+from spotipy.oauth2 import SpotifyOAuth
+import spotipy
 import os
 import datetime
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-from dateutil.relativedelta import relativedelta
 import jwt
 from urllib.parse import quote, unquote
+from dateutil.relativedelta import relativedelta
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///users.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Function to create JWT
-def create_jwt(user_id):
-    payload = {
-        'user_id': user_id,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=24)  # Token valid for 24 hours
-    }
-    token = jwt.encode(payload, app.config['SECRET_KEY'], algorithm="HS256")
-    return token
+db = SQLAlchemy(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
 
-# Function to decode JWT
-def decode_jwt(token):
-    try:
-        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
-        return payload['user_id']
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
-        return None
+# User model
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    spotify_user_id = db.Column(db.String(50), unique=True, nullable=False)
+    access_token = db.Column(db.String(255), nullable=False)  # Store the Spotify access token
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 # Initialize Spotify OAuth
 def create_spotify_oauth():
@@ -57,123 +56,78 @@ def callback():
         return redirect(url_for('login'))
 
     token_info = sp_oauth.get_access_token(code)
+    access_token = token_info['access_token']
+    sp = spotipy.Spotify(auth=access_token)
+    spotify_user_id = sp.current_user()['id']
 
-    if not token_info:
-        return redirect(url_for('login'))
+    user = User.query.filter_by(spotify_user_id=spotify_user_id).first()
+    if not user:
+        # If the user does not exist, create a new user
+        user = User(spotify_user_id=spotify_user_id, access_token=access_token)
+        db.session.add(user)
+        db.session.commit()
 
-    sp = spotipy.Spotify(auth=token_info['access_token'])
-    user_id = sp.current_user()['id']
+    # Log the user in
+    login_user(user)
 
-    # Store the token in the session
-    session['user_id'] = user_id
-    session['access_token'] = token_info['access_token']
-
-    # Create JWT and URL-encode it
-    token = create_jwt(user_id)
-    encoded_token = quote(token)  # URL-encode the token
-
-    return redirect(url_for('create_or_update_playlist', token=encoded_token))
-
-# Middleware to protect routes
-def token_required(f):
-    def wrap(*args, **kwargs):
-        token = request.headers.get('Authorization')
-        if not token:
-            return jsonify({'message': 'Token is missing!'}), 403
-
-        user_id = decode_jwt(token)
-        if not user_id:
-            return jsonify({'message': 'Token is invalid or expired!'}), 403
-
-        return f(user_id, *args, **kwargs)
-
-    wrap.__name__ = f.__name__
-    return wrap
+    return redirect(url_for('create_or_update_playlist'))
 
 @app.route('/create_or_update_playlist')
+@login_required
 def create_or_update_playlist():
-    token = request.args.get('token')  # Get the token from query parameters
-
-    if not token:
-        return jsonify({'message': 'Token is missing!'}), 403
-
-    try:
-        # Decode the token
-        decoded_token = unquote(token)  # URL-decode the token
-        user_id = decode_jwt(decoded_token)
-        if not user_id:
-            return jsonify({'message': 'Token is invalid or expired!'}), 403
-    except Exception as e:
-        return jsonify({'message': str(e)}), 403
-
-    # Use the access token from the session
-    access_token = session.get('access_token')
-    if not access_token:
-        return redirect(url_for('login'))
-
+    access_token = current_user.access_token
     sp = spotipy.Spotify(auth=access_token)
-    playlist_id = get_playlist_id(sp, user_id)
+    playlist_id = get_playlist_id(sp, current_user.spotify_user_id)
     playlist_name = None
 
     if playlist_id:
         playlist = sp.playlist(playlist_id)
         playlist_name = playlist['name']
 
-    return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name, user_id=user_id)
+    return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name)
 
 @app.route('/create_playlist')
-@token_required
-def create_playlist(user_id):
-    # Use the access token from the session
-    access_token = session.get('access_token')
+@login_required
+def create_playlist():
+    access_token = current_user.access_token
     sp = spotipy.Spotify(auth=access_token)
 
-    # Determine the playlist name for the last month
     now = datetime.datetime.now()
     last_month = now - relativedelta(months=1)
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
     playlist_description = "This playlist was created automatically using this: https://spotify-top-monthly-playlist.onrender.com/"
 
-    # Check if the playlist already exists
-    playlist_id = get_playlist_id(sp, user_id, playlist_prefix=playlist_name)
+    playlist_id = get_playlist_id(sp, current_user.spotify_user_id, playlist_prefix=playlist_name)
     if playlist_id:
         message = f"Playlist '{playlist_name}' already exists."
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
     else:
-        # Get the top tracks of the last month
         results = sp.current_user_top_tracks(time_range='short_term', limit=50)
         top_tracks = [track['uri'] for track in results['items']]
-
-        # Create a new playlist
-        playlist = sp.user_playlist_create(user_id, playlist_name, public=True, description=playlist_description)
+        playlist = sp.user_playlist_create(current_user.spotify_user_id, playlist_name, public=True, description=playlist_description)
         sp.playlist_add_items(playlist['id'], top_tracks)
-        playlist_id = get_playlist_id(sp, user_id, playlist_prefix=playlist_name)
+        playlist_id = get_playlist_id(sp, current_user.spotify_user_id, playlist_prefix=playlist_name)
         message = f"Playlist '{playlist_name}' created successfully!"
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
     return render_template('created_playlist.html', message=message, playlist_exists=True, playlist_name=playlist_name, playlist_url=playlist_url)
 
 @app.route('/update_playlist')
-@token_required
-def update_playlist(user_id):
-    # Use the access token from the session
-    access_token = session.get('access_token')
+@login_required
+def update_playlist():
+    access_token = current_user.access_token
     sp = spotipy.Spotify(auth=access_token)
 
-    # Get the top tracks of the last month
     results = sp.current_user_top_tracks(time_range='short_term', limit=50)
     top_tracks = [track['uri'] for track in results['items']]
-
-    # Determine the playlist name for the last month
     now = datetime.datetime.now()
     last_month = now - relativedelta(months=1)
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
     playlist_description = "This playlist was created automatically using this: https://spotify-top-monthly-playlist.onrender.com/"
 
-    # Check if the playlist already exists
-    playlist_id = get_playlist_id(sp, user_id)
+    playlist_id = get_playlist_id(sp, current_user.spotify_user_id)
     if playlist_id:
-        sp.user_playlist_change_details(user_id, playlist_id, name=playlist_name, description=playlist_description)
+        sp.user_playlist_change_details(current_user.spotify_user_id, playlist_id, name=playlist_name, description=playlist_description)
         sp.playlist_replace_items(playlist_id, top_tracks)
         message = f"Playlist '{playlist_name}' updated successfully!"
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
@@ -183,12 +137,11 @@ def update_playlist(user_id):
         return render_template('options.html', message=message)
 
 @app.route('/delete_playlist')
-@token_required
-def delete_playlist(user_id):
-    # Use the access token from the session
-    access_token = session.get('access_token')
+@login_required
+def delete_playlist():
+    access_token = current_user.access_token
     sp = spotipy.Spotify(auth=access_token)
-    playlist_id = get_playlist_id(sp, user_id)
+    playlist_id = get_playlist_id(sp, current_user.spotify_user_id)
 
     if playlist_id:
         sp.current_user_unfollow_playlist(playlist_id)
@@ -199,9 +152,9 @@ def delete_playlist(user_id):
     return render_template('options.html', message=message, playlist_exists=False)
 
 @app.route('/logout')
+@login_required
 def logout():
-    session.pop('access_token', None)
-    session.pop('user_id', None)
+    logout_user()
     return redirect(url_for('index'))
 
 @app.route('/signup_auto_update')
