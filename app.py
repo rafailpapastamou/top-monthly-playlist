@@ -100,7 +100,7 @@ def create_playlist():
     now = datetime.datetime.now()
     last_month = now - relativedelta(months=1)
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
-    playlist_description = "This playlist was created automatically."
+    playlist_description = "This playlist was created automatically - https://spotify-top-monthly-playlist.onrender.com/."
 
     playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
     if playlist_id:
@@ -134,7 +134,7 @@ def update_playlist():
     now = datetime.datetime.now()
     last_month = now - relativedelta(months=1)
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
-    playlist_description = "This playlist was created automatically."
+    playlist_description = "This playlist was created automatically - https://spotify-top-monthly-playlist.onrender.com/."
 
     playlist_id = get_playlist_id(sp, spotify_user_id)
     if playlist_id:
