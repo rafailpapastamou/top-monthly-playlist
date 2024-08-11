@@ -39,8 +39,11 @@ p {
   transition: background-color 0.3s ease;
   margin: 5px;
   flex: 1 1 auto; /* Allow buttons to be flexible */
-  max-width: 100%; /* Ensure buttons don’t overflow */
+  max-width: calc(
+    50% - 20px
+  ); /* Ensure buttons don’t overflow, set space for both buttons */
   white-space: nowrap; /* Prevent text from wrapping */
+  box-sizing: border-box;
 }
 
 .btn:hover {
