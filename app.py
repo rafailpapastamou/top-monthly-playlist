@@ -5,6 +5,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from dateutil.relativedelta import relativedelta
 import jwt
+from urllib.parse import quote, unquote
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
@@ -63,10 +64,10 @@ def callback():
     sp = spotipy.Spotify(auth=token_info['access_token'])
     user_id = sp.current_user()['id']
 
-    # Create JWT and return it to the client
+    # Create JWT and URL-encode it
     token = create_jwt(user_id)
-    # Ensure the token is URL-encoded
-    encoded_token = jwt.utils.base64url_encode(token.encode()).decode()
+    encoded_token = quote(token)  # URL-encode the token
+
     return redirect(url_for('create_or_update_playlist', token=encoded_token))
 
 # Middleware to protect routes
@@ -88,10 +89,29 @@ def token_required(f):
     return wrap
 
 @app.route('/create_or_update_playlist')
-@token_required
-def create_or_update_playlist(user_id):
-    access_token = request.headers.get('Access-Token')
-    sp = spotipy.Spotify(auth=access_token)
+def create_or_update_playlist():
+    token = request.args.get('token')  # Get the token from query parameters
+
+    if not token:
+        return jsonify({'message': 'Token is missing!'}), 403
+
+    try:
+        # Decode the token
+        decoded_token = unquote(token)  # URL-decode the token
+        user_id = decode_jwt(decoded_token)
+        if not user_id:
+            return jsonify({'message': 'Token is invalid or expired!'}), 403
+    except Exception as e:
+        return jsonify({'message': str(e)}), 403
+
+    # Proceed with Spotify API interactions
+    sp_oauth = create_spotify_oauth()
+    token_info = sp_oauth.get_cached_token()  # This may need adjustments if you're not caching tokens
+
+    if not token_info:
+        return redirect(url_for('login'))
+
+    sp = spotipy.Spotify(auth=token_info['access_token'])
     playlist_id = get_playlist_id(sp, user_id)
     playlist_name = None
 
@@ -104,7 +124,7 @@ def create_or_update_playlist(user_id):
 @app.route('/create_playlist')
 @token_required
 def create_playlist(user_id):
-    access_token = request.headers.get('Access-Token')
+    access_token = request.headers.get('Authorization')
     sp = spotipy.Spotify(auth=access_token)
 
     # Determine the playlist name for the last month
@@ -135,7 +155,7 @@ def create_playlist(user_id):
 @app.route('/update_playlist')
 @token_required
 def update_playlist(user_id):
-    access_token = request.headers.get('Access-Token')
+    access_token = request.headers.get('Authorization')
     sp = spotipy.Spotify(auth=access_token)
 
     # Get the top tracks of the last month
@@ -163,7 +183,7 @@ def update_playlist(user_id):
 @app.route('/delete_playlist')
 @token_required
 def delete_playlist(user_id):
-    access_token = request.headers.get('Access-Token')
+    access_token = request.headers.get('Authorization')
     sp = spotipy.Spotify(auth=access_token)
     playlist_id = get_playlist_id(sp, user_id)
 
