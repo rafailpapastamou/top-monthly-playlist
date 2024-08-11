@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, render_template, session, flash
+from flask import Flask, redirect, url_for, request, render_template, session, flash, jsonify
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from spotipy.oauth2 import SpotifyOAuth
