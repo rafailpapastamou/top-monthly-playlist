@@ -184,7 +184,7 @@ def delete_playlist():
     else:
         message = "No playlist found to delete."
 
-    return render_template('options.html', message=message, playlist_exists=False)
+    return render_template('deleted_playlist.html', message=message, playlist_exists=False)
 
 @app.route('/logout')
 def logout():

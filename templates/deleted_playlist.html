@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>You successfully created your playlist</title>
+    <title>You successfully deleted your playlist</title>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='styles.css') }}"
@@ -11,17 +11,9 @@
   </head>
   <body>
     <div class="container">
-      <h1>You successfully created your playlist!</h1>
-      <p>
-        You can visit your new playlist by clicking
-        <a href="{{ playlist_url }}" target="_blank">here</a>. Otherwise you can
-        choose your next action below:
-      </p>
+      <h1>You successfully deleted your playlist!</h1>
       <a href="{{ url_for('create_or_update_playlist') }}" class="btn"
         >Main Menu</a
-      >
-      <a href="{{ url_for('delete_playlist') }}" class="btn_red"
-        >Delete Playlist</a
       >
       <a href="{{ url_for('logout') }}" class="btn_red">Log Out</a>
     </div>
