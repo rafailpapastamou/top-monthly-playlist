@@ -65,8 +65,8 @@ def callback():
     user_id = sp.current_user()['id']
 
     # Store the token in the session
-    session['access_token'] = token_info['access_token']
     session['user_id'] = user_id
+    session['access_token'] = token_info['access_token']
 
     # Create JWT and URL-encode it
     token = create_jwt(user_id)
@@ -78,12 +78,10 @@ def callback():
 def token_required(f):
     def wrap(*args, **kwargs):
         token = request.headers.get('Authorization')
-
         if not token:
             return jsonify({'message': 'Token is missing!'}), 403
 
         user_id = decode_jwt(token)
-
         if not user_id:
             return jsonify({'message': 'Token is invalid or expired!'}), 403
 
