@@ -225,6 +225,10 @@ def signup_auto_update():
 
     return redirect(url_for('create_or_update_playlist'))
 
+@app.route('/opt_out_auto_update')
+def opt_out_auto_update():
+    return None
+
 # For debugging and testing purposes
 @app.route('/show_users')
 def show_users():
