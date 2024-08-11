@@ -5,3 +5,4 @@ python-dateutil
 PyJWT
 quote
 flask-login
+flask_sqlalchemy
