@@ -1,4 +1,4 @@
-# Spotify Top Monthly Playlist
+# Spotify Top Monthly Playlist Creator
 
 This app allows you to create a Spotify playlist with your top monthly songs automatically.
 
@@ -25,6 +25,7 @@ The app uses the free tier of [Render](https://render.com/) to be deployed so if
 ## Resources
 
 - https://shubham13596.medium.com/using-spotify-web-api-in-flask-c28bd4fd47b6
+- https://techkoalainsights.com/sqlalchemy-with-python-flask-089ba97c4612
 
 ## Contributing
 
