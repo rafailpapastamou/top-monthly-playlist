@@ -20,7 +20,7 @@ def login():
         'response_type': 'code',
         'client_id': os.getenv('SPOTIPY_CLIENT_ID'),
         'redirect_uri': os.getenv('SPOTIPY_REDIRECT_URI'),
-        'scope': 'playlist-modify-public playlist-modify-private user-library-read',
+        'scope': 'playlist-modify-public playlist-modify-private user-library-read user-top-read',
         'state': str(uuid.uuid4()),
         'show_dialog': 'true'
     }
