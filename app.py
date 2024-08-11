@@ -100,7 +100,11 @@ def create_or_update_playlist():
         playlist_name = playlist['name']
         playlist_url = playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
-    return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name,playlist_url=playlist_url)
+    # Check if the user is signed up for automatic updates
+    user = User.query.filter_by(spotify_user_id=spotify_user_id).first()
+    signed_up_for_auto_update = user is not None
+
+    return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name,playlist_url=playlist_url, signed_up_for_auto_update=signed_up_for_auto_update)
 
 @app.route('/create_playlist')
 def create_playlist():

@@ -36,15 +36,24 @@
         of the last 30 days.
       </p>
       <a href="{{ url_for('create_playlist') }}" class="btn">Create Playlist</a>
-      {% endif %}
+      {% endif %} {% if signed_up_for_auto_update %}
       <p>
-        Click the button below if you want every 1st of the month an updated
-        playlist with your top streamed songs to be created automatically. You
+        You are already signed up for automatic updates. Your playlist will be
+        updated automatically on the 1st of each month.
+      </p>
+      <a href="{{ url_for('opt_out_auto_update') }}" class="btn btn_red"
+        >Opt Out of Automatic Updates</a
+      >
+      {% else %}
+      <p>
+        Click the button below if you want an updated playlist with your top
+        streamed songs to be created automatically every 1st of the month. You
         can opt out anytime you want.
       </p>
       <a href="{{ url_for('signup_auto_update') }}" class="btn"
         >Sign Up for Automatic Updates</a
       >
+      {% endif %}
       <a href="{{ url_for('logout') }}" class="btn btn_red">Log Out</a>
     </div>
     <div class="links">
