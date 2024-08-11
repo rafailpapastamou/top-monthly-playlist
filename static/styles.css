@@ -17,6 +17,7 @@ body {
   background-color: #191414;
   border-radius: 8px;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+  max-width: 100%; /* Ensure container doesn’t overflow */
 }
 
 h1 {
@@ -35,7 +36,9 @@ p {
   padding: 10px 20px;
   border-radius: 50px;
   transition: background-color 0.3s ease;
-  margin: 5px; /* Add margin to buttons */
+  margin: 5px;
+  flex: 1 1 auto; /* Allow buttons to be flexible */
+  max-width: 100%; /* Ensure buttons don’t overflow */
 }
 
 .btn:hover {
@@ -53,18 +56,20 @@ p {
 /* Container for buttons */
 .button-container {
   display: flex;
-  flex-wrap: wrap; /* Ensure buttons wrap on smaller screens */
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 10px; /* Add space between buttons */
+  width: 100%; /* Ensure the container uses the full width */
 }
 
 /* New styles for link container */
 .links {
   text-align: center;
-  margin-top: 20px; /* Adjust space between the container and the links */
+  margin-top: 20px;
 }
 
 .links p {
-  margin: 0; /* Remove default margin to avoid extra space */
+  margin: 0;
 }
 
 .links a {
@@ -102,7 +107,7 @@ p {
 /* Styles for mobile phones */
 @media (max-width: 480px) {
   body {
-    font-size: 14px; /* Adjust font size for better readability */
+    font-size: 14px;
     padding: 10px;
   }
 
@@ -118,7 +123,13 @@ p {
   .btn,
   .btn_red {
     padding: 6px 12px;
-    font-size: 14px; /* Adjust button font size for smaller screens */
+    font-size: 14px;
+    width: 100%; /* Ensure buttons take full width on mobile */
+  }
+
+  .button-container {
+    flex-direction: column;
+    gap: 5px; /* Adjust the gap for smaller screens */
   }
 
   p {
