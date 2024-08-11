@@ -59,7 +59,7 @@ p {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px; /* Add space between buttons */
+  gap: 15px; /* Increase space between buttons */
   width: 100%; /* Ensure the container uses the full width */
 }
 
@@ -102,6 +102,10 @@ p {
   p {
     margin-bottom: 15px;
   }
+
+  .button-container {
+    gap: 10px; /* Adjust spacing for medium screens */
+  }
 }
 
 /* Styles for mobile phones */
@@ -129,7 +133,7 @@ p {
 
   .button-container {
     flex-direction: column;
-    gap: 5px; /* Adjust the gap for smaller screens */
+    gap: 10px; /* Increase gap for better spacing on small screens */
   }
 
   p {
