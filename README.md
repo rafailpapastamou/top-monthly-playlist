@@ -22,6 +22,10 @@ The app uses the free tier of [Render](https://render.com/) to be deployed so if
 - CSS
 - [Render](https://render.com/)
 
+## Resources
+
+- https://shubham13596.medium.com/using-spotify-web-api-in-flask-c28bd4fd47b6
+
 ## Contributing
 
 Feel free to contribute! If you discover any issues or want to add new features, please submit a pull request.
