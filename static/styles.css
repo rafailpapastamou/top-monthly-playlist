@@ -8,7 +8,7 @@ body {
   align-items: center;
   height: 100vh;
   margin: 0;
-  overflow: auto; /* Allow scrolling if necessary */
+  overflow: auto;
 }
 
 .container {
@@ -17,8 +17,8 @@ body {
   background-color: #191414;
   border-radius: 8px;
   box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-  width: auto; /* Ensure container can grow as needed */
-  max-width: 100%; /* Ensure container doesn’t overflow */
+  width: 100%;
+  max-width: 500px; /* Limit the container width for readability */
 }
 
 h1 {
@@ -31,6 +31,7 @@ p {
 
 .btn,
 .btn_red {
+  display: block;
   text-decoration: none;
   color: #fff;
   background-color: #1db954;
@@ -55,13 +56,9 @@ p {
   background-color: rgb(182, 27, 27);
 }
 
-/* Container for buttons */
+/* Button container to stack buttons */
 .button-container {
-  display: flex;
-  flex-direction: column; /* Stack buttons vertically */
-  justify-content: center;
-  align-items: center;
-  width: 100%; /* Ensure the container uses the full width */
+  width: 100%;
 }
 
 /* New styles for link container */
@@ -84,7 +81,7 @@ p {
   text-decoration: underline;
 }
 
-/* for phones */
+/* Media query for tablets and small desktops */
 @media (max-width: 768px) {
   .container {
     padding: 15px;
@@ -99,7 +96,6 @@ p {
   .btn_red {
     padding: 8px 16px;
     font-size: 16px; /* Adjust font size if needed */
-    white-space: nowrap; /* Ensure text doesn't wrap */
   }
 
   p {
@@ -127,8 +123,7 @@ p {
   .btn_red {
     padding: 6px 12px;
     font-size: 14px;
-    width: 100%; /* Ensure buttons take full width on mobile */
-    white-space: nowrap; /* Ensure text doesn't wrap */
+    white-space: nowrap;
   }
 
   p {

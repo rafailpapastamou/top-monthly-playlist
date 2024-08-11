@@ -18,10 +18,14 @@
         playlist_name }}". You can update it if you want or you can sign up for
         the auto update of your playlist.
       </p>
-      <a href="{{ url_for('update_playlist') }}" class="btn">Update Playlist</a>
-      <a href="{{ url_for('delete_playlist') }}" class="btn_red"
-        >Delete Playlist</a
-      >
+      <div class="button-container">
+        <a href="{{ url_for('update_playlist') }}" class="btn"
+          >Update Playlist</a
+        >
+        <a href="{{ url_for('delete_playlist') }}" class="btn btn_red"
+          >Delete Playlist</a
+        >
+      </div>
       {% else %}
       <p>
         You can create your top monthly playlist by clicking the "Create
@@ -34,7 +38,7 @@
       <a href="{{ url_for('signup_auto_update') }}" class="btn"
         >Sign Up for Automatic Updates</a
       >
-      <a href="{{ url_for('logout') }}" class="btn_red">Log Out</a>
+      <a href="{{ url_for('logout') }}" class="btn btn_red">Log Out</a>
     </div>
     <div class="links">
       <p>
