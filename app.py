@@ -6,9 +6,24 @@ from dateutil.relativedelta import relativedelta
 import urllib.parse
 import uuid
 import requests
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
+
+# Configuring the Database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///example.db'  # SQLite URI
+db = SQLAlchemy(app)
+
+# Define the User model for the database
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    spotify_user_id = db.Column(db.String(100), unique=True, nullable=False)
+    access_token = db.Column(db.String(200), nullable=False)
+    refresh_token = db.Column(db.String(200), nullable=True)
+
+    def __repr__(self):
+        return f'<User {self.spotify_user_id}>'
 
 @app.route('/')
 def index():
@@ -177,7 +192,32 @@ def logout():
 
 @app.route('/signup_auto_update')
 def signup_auto_update():
-    return None
+    access_token = os.getenv('token')
+    if not access_token:
+        return redirect(url_for('login'))
+    
+    sp = spotipy.Spotify(auth=access_token)
+    user_profile = sp.current_user()
+    spotify_user_id = user_profile['id']
+
+    # Check if the user already exists
+    user = User.query.filter_by(spotify_user_id=spotify_user_id).first()
+
+    if user:
+        # Update existing user's info
+        user.access_token = access_token
+        user.signed_up_for_auto_update = True
+    else:
+        # Create a new user entry
+        user = User(
+            spotify_user_id=spotify_user_id,
+            access_token=access_token,
+        )
+        db.session.add(user)
+
+    db.session.commit()
+
+    return redirect(url_for('create_or_update_playlist'))
 
 def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
     playlists = sp.user_playlists(user_id, limit=50)
@@ -187,5 +227,6 @@ def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
     return None
 
 if __name__ == "__main__":
+    db.create_all()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
