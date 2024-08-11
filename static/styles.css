@@ -40,6 +40,7 @@ p {
   margin: 5px;
   flex: 1 1 auto; /* Allow buttons to be flexible */
   max-width: 100%; /* Ensure buttons don’t overflow */
+  white-space: nowrap; /* Prevent text from wrapping */
 }
 
 .btn:hover {
@@ -97,6 +98,8 @@ p {
   .btn,
   .btn_red {
     padding: 8px 16px;
+    font-size: 16px; /* Adjust font size if needed */
+    white-space: nowrap; /* Ensure text doesn't wrap */
   }
 
   p {
@@ -129,6 +132,7 @@ p {
     padding: 6px 12px;
     font-size: 14px;
     width: 100%; /* Ensure buttons take full width on mobile */
+    white-space: nowrap; /* Ensure text doesn't wrap */
   }
 
   .button-container {
