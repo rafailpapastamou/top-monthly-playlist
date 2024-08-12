@@ -6,24 +6,37 @@ from dateutil.relativedelta import relativedelta
 import urllib.parse
 import uuid
 import requests
-from flask_sqlalchemy import SQLAlchemy
+from flask_pymongo import PyMongo
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
 
-# Configuring the Database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///example.db'  # SQLite URI
-db = SQLAlchemy(app)
+# Configuring the MongoDB Database
+mongo_uri = os.getenv('MONGO_URI', 'your_mongodb_connection_string_here')
+app.config['MONGO_URI'] = mongo_uri
+mongo = PyMongo(app)
 
-# Define the User model for the database
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    spotify_user_id = db.Column(db.String(100), unique=True, nullable=False)
-    access_token = db.Column(db.String(200), nullable=False)
-    refresh_token = db.Column(db.String(200), nullable=True)
+# Define the User model for MongoDB
+class User:
+    def __init__(self, spotify_user_id, access_token, refresh_token=None):
+        self.spotify_user_id = spotify_user_id
+        self.access_token = access_token
+        self.refresh_token = refresh_token
 
-    def __repr__(self):
-        return f'<User {self.spotify_user_id}>'
+    def to_dict(self):
+        return {
+            "spotify_user_id": self.spotify_user_id,
+            "access_token": self.access_token,
+            "refresh_token": self.refresh_token
+        }
+    
+    @staticmethod
+    def from_dict(data):
+        return User(
+            spotify_user_id=data['spotify_user_id'],
+            access_token=data['access_token'],
+            refresh_token=data.get('refresh_token')
+        )
 
 @app.route('/')
 def index():
@@ -101,7 +114,7 @@ def create_or_update_playlist():
         playlist_url = playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
     # Check if the user is signed up for automatic updates
-    user = User.query.filter_by(spotify_user_id=spotify_user_id).first()
+    user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
     signed_up_for_auto_update = user is not None
 
     return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name,playlist_url=playlist_url, signed_up_for_auto_update=signed_up_for_auto_update)
@@ -206,22 +219,19 @@ def signup_auto_update():
     user_profile = sp.current_user()
     spotify_user_id = user_profile['id']
 
-    # Check if the user already exists
-    user = User.query.filter_by(spotify_user_id=spotify_user_id).first()
+    user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
 
     if user:
-        # Update existing user's info
-        user.access_token = access_token
-        user.signed_up_for_auto_update = True
+        mongo.db.users.update_one(
+            {"spotify_user_id": spotify_user_id},
+            {"$set": {"access_token": access_token, "refresh_token": user.get("refresh_token")}}
+        )
     else:
-        # Create a new user entry
-        user = User(
+        new_user = User(
             spotify_user_id=spotify_user_id,
             access_token=access_token,
         )
-        db.session.add(user)
-
-    db.session.commit()
+        mongo.db.users.insert_one(new_user.to_dict())
 
     return redirect(url_for('create_or_update_playlist'))
 
@@ -249,7 +259,5 @@ def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
     return None
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)

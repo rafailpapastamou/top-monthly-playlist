@@ -3,4 +3,5 @@ spotipy
 python-dotenv
 python-dateutil
 uuid
-Flask-SQLAlchemy
+pymongo
+flask-pymongo
