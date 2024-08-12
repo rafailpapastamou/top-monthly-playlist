@@ -242,11 +242,14 @@ def opt_out_auto_update():
 # For debugging and testing purposes
 @app.route('/show_users')
 def show_users():
-    # Query all users from the database
-    users = User.query.all()
-    
-    # Create a simple HTML table to display the users
-    return render_template('show_users.html', users=users)
+    # Fetch all users from the MongoDB collection
+    users = mongo.db.users.find()  # This returns a cursor
+
+    # Convert the cursor to a list of user dictionaries
+    user_list = [user for user in users]
+
+    # Render the list of users in an HTML template
+    return render_template('show_users.html', users=user_list)
 
 def get_all_users_signed_for_auto_updates():
     return User.query.filter_by(signed_up_for_auto_update=True).all()
