@@ -20,9 +20,9 @@
       {% if signed_up_for_auto_update %}
       <p>
         You are already signed up for automatic updates. Your
-        <a href="{{ playlist_url }}" target="_blank" rel="noopener noreferrer"
-          >playlist</a
-        >
+        <a href="{{ playlist_url }}" target="_blank" rel="noopener noreferrer">
+          playlist
+        </a>
         will be updated automatically on the 1st of each month.
       </p>
       <br />
@@ -33,17 +33,15 @@
       <p>
         You can opt out of the automatic updates by clicking the button below.
       </p>
-
       <a href="{{ url_for('opt_out_auto_update') }}" class="btn btn_orange"
         >Opt Out of Automatic Updates</a
       >
-
-      {% else %} {% if playlist_exists %}
+      {% elif playlist_exists %}
       <p>
         You already have a
-        <a href="{{ playlist_url }}" target="_blank" rel="noopener noreferrer"
-          >playlist</a
-        >
+        <a href="{{ playlist_url }}" target="_blank" rel="noopener noreferrer">
+          playlist
+        </a>
         created from this website. You can update it if you want by clicking the
         button below.
       </p>
@@ -62,7 +60,7 @@
         of the last 30 days.
       </p>
       <a href="{{ url_for('create_playlist') }}" class="btn">Create Playlist</a>
-      {% endif %} {% else %}
+      {% endif %} {% if not signed_up_for_auto_update %}
       <p>
         Click the button below if you want an updated playlist with your top
         streamed songs to be created automatically every 1st of the month. You
@@ -72,6 +70,7 @@
         >Sign Up for Automatic Updates</a
       >
       {% endif %}
+
       <a href="{{ url_for('logout') }}" class="btn btn_red">Log Out</a>
     </div>
     <div class="links">
