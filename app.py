@@ -245,9 +245,28 @@ def signup_auto_update():
         mongo.db.users.insert_one(new_user.to_dict())
 
     return redirect(url_for('create_or_update_playlist'))
+
 @app.route('/opt_out_auto_update')
 def opt_out_auto_update():
-    return None
+    access_token = os.getenv('token')
+    if not access_token:
+        return redirect(url_for('login'))
+
+    sp = spotipy.Spotify(auth=access_token)
+
+    # Fetch the user's Spotify ID
+    user_profile = sp.current_user()
+    spotify_user_id = user_profile['id']
+
+    # Delete the user from the MongoDB collection
+    result = mongo.db.users.delete_one({"spotify_user_id": spotify_user_id})
+
+    if result.deleted_count > 0:
+        message = "You have successfully opted out of automatic updates."
+    else:
+        message = "No record found to delete or you have already opted out."
+
+    return render_template('opt_out.html', message=message)
 
 # For debugging and testing purposes
 @app.route('/show_users')
