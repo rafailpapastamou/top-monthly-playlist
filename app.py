@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, render_template
+from flask import Flask, redirect, url_for, request, render_template, jsonify
 import spotipy
 import os
 import datetime
@@ -321,6 +321,7 @@ def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
 @app.route('/run_monthly_update')
 def run_monthly_update():
     users = mongo.db.users.find()
+    successful_updates = []
 
     for user_data in users:
         user = User.from_dict(user_data)
@@ -333,10 +334,14 @@ def run_monthly_update():
                 mongo.db.users.update_one({"spotify_user_id": user.spotify_user_id}, {"$set": {"access_token": access_token}})
             sp = spotipy.Spotify(auth=access_token)
             update_user_playlist(sp, user.spotify_user_id)
+            successful_updates.append(user.spotify_user_id)
         except Exception as e:
             print(f"Failed to update playlist for {user.spotify_user_id}: {e}")
 
-    return "Monthly update completed", 200
+    return jsonify({
+        "message": "Monthly update completed",
+        "successful_user_ids": successful_updates
+    }), 200
 
 def update_user_playlist(sp, spotify_user_id):
     results = sp.current_user_top_tracks(time_range='short_term', limit=50)
