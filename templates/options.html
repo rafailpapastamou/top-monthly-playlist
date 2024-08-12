@@ -17,7 +17,7 @@
   <body>
     <div class="container">
       <h1>Spotify Top Monthly Playlist Creator</h1>
-      {% if signed_up_for_auto_update %}
+      {% if signed_up_for_auto_update %} {% if playlist_exists %}
       <p>
         You are already signed up for automatic updates. Your
         <a href="{{ playlist_url }}" target="_blank" rel="noopener noreferrer">
@@ -26,11 +26,16 @@
         will be updated automatically on the 1st of each month.
       </p>
       <br />
-      {% if playlist_exists %}
       <p>You can delete your playlist by clicking the button below.</p>
       <a href="{{ url_for('delete_playlist') }}" class="btn btn_red"
         >Delete Playlist</a
       >
+      {% else %}
+      <p>
+        You are already signed up for automatic updates. Your playlist
+        (currently deleted) will be recreated and then automatically updated on
+        the 1st of each month.
+      </p>
       {% endif %}
       <p>
         You can opt out of the automatic updates by clicking the button below.
