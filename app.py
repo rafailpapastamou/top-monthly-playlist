@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, render_template, jsonify
+from flask import Flask, redirect, url_for, request, render_template
 import spotipy
 import os
 import datetime
@@ -86,10 +86,8 @@ def get_access_token(authorization_code: str):
     }
     response = requests.post(spotify_request_access_token_url, data=body)
     if response.status_code == 200:
-        print("Successfully obtained access and refresh tokens.")
         return response.json()
     else:
-        print(f"Failed to obtain access token: {response.content}")
         raise Exception('Failed to obtain Access token')
 
 @app.route('/callback')
@@ -99,10 +97,6 @@ def callback():
     
     # Store access token in environment variable
     os.environ['token'] = credentials['access_token']
-    
-    refresh_token = credentials.get('refresh_token')
-    if refresh_token:
-        os.environ['refresh_token'] = refresh_token
 
     return redirect(url_for('create_or_update_playlist'))
 
@@ -323,53 +317,6 @@ def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
         if playlist['name'].startswith(playlist_prefix):
             return playlist['id']
     return None
-
-@app.route('/run_monthly_update')
-def run_monthly_update():
-    users = mongo.db.users.find()
-    successful_updates = []
-
-    for user_data in users:
-        user = User.from_dict(user_data)
-
-        try:
-            # Refresh the access token if needed
-            new_tokens = refresh_access_token(user.refresh_token)
-            access_token = new_tokens.get('access_token', user.access_token)
-            if access_token != user.access_token:
-                mongo.db.users.update_one({"spotify_user_id": user.spotify_user_id}, {"$set": {"access_token": access_token}})
-            sp = spotipy.Spotify(auth=access_token)
-            update_user_playlist(sp, user.spotify_user_id)
-            successful_updates.append(user.spotify_user_id)
-        except Exception as e:
-            print(f"Failed to update playlist for {user.spotify_user_id}: {e}")
-
-    return jsonify({
-        "message": "Monthly update completed",
-        "successful_user_ids": successful_updates
-    }), 200
-
-def update_user_playlist(sp, spotify_user_id):
-    results = sp.current_user_top_tracks(time_range='short_term', limit=50)
-    top_tracks = [track['uri'] for track in results['items']]
-
-    now = datetime.datetime.now()
-    last_month = now - relativedelta(months=1)
-    playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
-    playlist_description = "This playlist was created automatically - https://spotify-top-monthly-playlist.onrender.com/."
-
-    playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
-    if playlist_id:
-        message = f"Playlist '{playlist_name}' already exists."
-        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
-    else:
-        results = sp.current_user_top_tracks(time_range='short_term', limit=50)
-        top_tracks = [track['uri'] for track in results['items']]
-        playlist = sp.user_playlist_create(spotify_user_id, playlist_name, public=True, description=playlist_description)
-        sp.playlist_add_items(playlist['id'], top_tracks)
-        playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
-        message = f"Playlist '{playlist_name}' created successfully!"
-        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
