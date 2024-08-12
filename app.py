@@ -213,6 +213,12 @@ def delete_playlist():
     else:
         message = "No existing playlist to delete."
         return render_template('options.html', message=message)
+    
+@app.route('/logout')
+def logout():
+    # Clear the token from the environment variable (optional)
+    os.environ.pop('token', None)
+    return redirect(url_for('index'))
 
 @app.route('/auto_update_signup')
 def auto_update_signup():
