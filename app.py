@@ -246,7 +246,7 @@ def signup_auto_update():
         mongo.db.users.insert_one(new_user.to_dict())
         message = "You have successfully signed up for automatic updates."
 
-    return render_template('signed_up_auto_complete.html', message=message)
+    return render_template('signed_up_auto_update.html', message=message)
 
 
 @app.route('/opt_out_auto_update')
