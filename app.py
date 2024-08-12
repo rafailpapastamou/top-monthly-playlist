@@ -139,9 +139,7 @@ def create_playlist():
     user_profile = sp.current_user()
     spotify_user_id = user_profile['id']
 
-    now = datetime.datetime.now()
-    last_month = now - relativedelta(months=1)
-    playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
+    playlist_name = f"My Monthly Top Tracks"
     playlist_description = "This playlist was created automatically - https://spotify-top-monthly-playlist.onrender.com/."
 
     playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
@@ -157,7 +155,7 @@ def create_playlist():
         message = f"Playlist '{playlist_name}' created successfully!"
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
-    return render_template('created_playlist.html', message=message, playlist_exists=True, playlist_name=playlist_name, playlist_url=playlist_url)
+    return render_template('created_playlist.html', message=message, playlist_exists=True, playlist_url=playlist_url)
 
 @app.route('/update_playlist')
 def update_playlist():
@@ -173,9 +171,7 @@ def update_playlist():
 
     results = sp.current_user_top_tracks(time_range='short_term', limit=50)
     top_tracks = [track['uri'] for track in results['items']]
-    now = datetime.datetime.now()
-    last_month = now - relativedelta(months=1)
-    playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
+    playlist_name = f"My Monthly Top Tracks"
     playlist_description = "This playlist was created automatically - https://spotify-top-monthly-playlist.onrender.com/."
 
     playlist_id = get_playlist_id(sp, spotify_user_id)
@@ -246,7 +242,25 @@ def signup_auto_update():
         mongo.db.users.insert_one(new_user.to_dict())
         message = "You have successfully signed up for automatic updates."
 
-    return render_template('signed_up_auto_update.html', message=message)
+    now = datetime.datetime.now()
+    last_month = now - relativedelta(months=1)
+    playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
+    playlist_description = "This playlist was created automatically - https://spotify-top-monthly-playlist.onrender.com/."
+
+    playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
+    if playlist_id:
+        message = f"Playlist '{playlist_name}' already exists."
+        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
+    else:
+        results = sp.current_user_top_tracks(time_range='short_term', limit=50)
+        top_tracks = [track['uri'] for track in results['items']]
+        playlist = sp.user_playlist_create(spotify_user_id, playlist_name, public=True, description=playlist_description)
+        sp.playlist_add_items(playlist['id'], top_tracks)
+        playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
+        message = f"Playlist '{playlist_name}' created successfully!"
+        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
+
+    return render_template('signed_up_auto_update.html', message=message, playlist_url=playlist_url)
 
 
 @app.route('/opt_out_auto_update')
