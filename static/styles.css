@@ -30,7 +30,8 @@ p {
 }
 
 .btn,
-.btn_red {
+.btn_red,
+.btn_orange {
   display: block;
   text-decoration: none;
   color: #fff;
@@ -54,6 +55,14 @@ p {
 
 .btn_red:hover {
   background-color: rgb(182, 27, 27);
+}
+
+.btn_orange {
+  background-color: orange;
+}
+
+.btn_orange:hover {
+  background-color: rgb(148, 99, 7);
 }
 
 /* Button container to stack buttons */
