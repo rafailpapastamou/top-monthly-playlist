@@ -229,6 +229,28 @@ def auto_update_signup():
 
     return render_template('auto_update_signup.html', message="Signed up for automatic updates successfully!")
 
+@app.route('/opt_out_auto_update')
+def opt_out_auto_update():
+    access_token = os.getenv('token')
+    if not access_token:
+        return redirect(url_for('login'))
+
+    sp = spotipy.Spotify(auth=access_token)
+
+    # Fetch the user's Spotify ID
+    user_profile = sp.current_user()
+    spotify_user_id = user_profile['id']
+
+    # Delete the user from the MongoDB collection
+    result = mongo.db.users.delete_one({"spotify_user_id": spotify_user_id})
+
+    if result.deleted_count > 0:
+        message = "You have successfully opted out of automatic updates."
+    else:
+        message = "No record found to delete or you have already opted out."
+
+    return render_template('opt_out.html', message=message)
+
 def get_playlist_id(sp, spotify_user_id, playlist_prefix="My Monthly Top Tracks"):
     # Check if the user's playlist already exists
     playlists = sp.user_playlists(spotify_user_id)
@@ -252,6 +274,18 @@ def refresh_access_token(refresh_token):
     else:
         print(f"Failed to refresh access token: {response.content}")
         return {}
+    
+# For debugging and testing purposes
+@app.route('/show_users')
+def show_users():
+    # Fetch all users from the MongoDB collection
+    users = mongo.db.users.find()  # This returns a cursor
+
+    # Convert the cursor to a list of user dictionaries
+    user_list = [user for user in users]
+
+    # Render the list of users in an HTML template
+    return render_template('show_users.html', users=user_list)
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
