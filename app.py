@@ -1,12 +1,12 @@
 from flask import Flask, redirect, url_for, request, render_template, jsonify
 import spotipy
 import os
+import datetime
+from dateutil.relativedelta import relativedelta
 import urllib.parse
 import uuid
 import requests
 from flask_pymongo import PyMongo
-import datetime
-from dateutil.relativedelta import relativedelta
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
@@ -40,154 +40,56 @@ class User:
 
 @app.route('/')
 def index():
-    # Fetch the spotify_user_id from request arguments
-    spotify_user_id = request.args.get('spotify_user_id')
 
-    if not spotify_user_id:
-        return render_template('index.html')  # Display the index page if no user is logged in
+    cache_handler = spotipy.cache_handler.FlaskSessionCacheHandler(session)
+    auth_manager = spotipy.oauth2.SpotifyOAuth(scope='playlist-modify-public playlist-modify-private user-library-read user-top-read',
+                                               cache_handler=cache_handler,
+                                               show_dialog=True)
 
-    # Fetch the access token from the database
-    access_token = get_access_token_from_db(spotify_user_id)
-    
-    if access_token:
-        try:
-            sp = spotipy.Spotify(auth=access_token)
-            sp.current_user()  # Make a simple API call to check if the token is still valid
-            return redirect(url_for('create_or_update_playlist', spotify_user_id=spotify_user_id))
-        except spotipy.exceptions.SpotifyException:
-            # Token is invalid or expired, attempt to refresh it
-            user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
-            if user:
-                new_access_token = refresh_access_token(user)
-                if new_access_token:
-                    # Update the token in the database
-                    mongo.db.users.update_one(
-                        {"spotify_user_id": spotify_user_id},
-                        {"$set": {"access_token": new_access_token}}
-                    )
-                    return redirect(url_for('create_or_update_playlist', spotify_user_id=spotify_user_id))
-            return redirect(url_for('login'))
+    if request.args.get("code"):
+        # Step 2. Being redirected from Spotify auth page
+        auth_manager.get_access_token(request.args.get("code"))
+        return redirect('/')
 
-    return render_template('index.html')
+    if not auth_manager.validate_token(cache_handler.get_cached_token()):
+        # Step 1. Display sign in link when no token
+        auth_url = auth_manager.get_authorize_url()
+        return f'<h2><a href="{auth_url}">Sign in</a></h2>'
 
-@app.route('/login')
-def login():
-    state = str(uuid.uuid4())
-    # Store the state in MongoDB for CSRF protection
-    mongo.db.auth_state.insert_one({'state': state})
-    
-    authentication_request_params = {
-        'response_type': 'code',
-        'client_id': os.getenv('SPOTIPY_CLIENT_ID'),
-        'redirect_uri': os.getenv('SPOTIPY_REDIRECT_URI'),
-        'scope': 'playlist-modify-public playlist-modify-private user-library-read user-top-read',
-        'state': state,
-        'show_dialog': 'true'
-    }
-    auth_url = 'https://accounts.spotify.com/authorize/?' + urllib.parse.urlencode(authentication_request_params)
-    return redirect(auth_url)
-
-def get_access_token(authorization_code: str):
-    spotify_request_access_token_url = 'https://accounts.spotify.com/api/token'
-    body = {
-        'grant_type': 'authorization_code',
-        'code': authorization_code,
-        'client_id': os.getenv('SPOTIPY_CLIENT_ID'),
-        'client_secret': os.getenv('SPOTIPY_CLIENT_SECRET'),
-        'redirect_uri': os.getenv('SPOTIPY_REDIRECT_URI')
-    }
-    response = requests.post(spotify_request_access_token_url, data=body)
-    if response.status_code == 200:
-        print("Successfully obtained access and refresh tokens.")
-        return response.json()
-    else:
-        print(f"Failed to obtain access token: {response.content}")
-        raise Exception('Failed to obtain Access token')
-
-@app.route('/callback')
-def callback():
-    code = request.args.get('code')
-    state = request.args.get('state')
-
-    # Verify state to prevent CSRF attacks
-    valid_state = mongo.db.auth_state.find_one({'state': state})
-    if not valid_state:
-        return "Invalid state parameter", 400
-
-    credentials = get_access_token(authorization_code=code)
-    access_token = credentials['access_token']
-    refresh_token = credentials.get('refresh_token')
-
-    # Fetch user information
-    sp = spotipy.Spotify(auth=access_token)
-    user_profile = sp.current_user()
-    spotify_user_id = user_profile['id']
-
-    # Check if the user is already in the database
-    user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
-
-    if user:
-        # Update the access token and refresh token
-        mongo.db.users.update_one(
-            {"spotify_user_id": spotify_user_id},
-            {"$set": {"access_token": access_token, "refresh_token": refresh_token}}
-        )
-    else:
-        # Insert a new user
-        new_user = User(
-            spotify_user_id=spotify_user_id,
-            access_token=access_token,
-            refresh_token=refresh_token
-        )
-        mongo.db.users.insert_one(new_user.to_dict())
-
-    return redirect(url_for('create_or_update_playlist', spotify_user_id=spotify_user_id))
-
-def get_access_token_from_db(spotify_user_id):
-    user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
-    if user:
-        return user.get('access_token')
-    return None
+    # Step 3. Signed in, show options
+    spotify = spotipy.Spotify(auth_manager=auth_manager)       
+    return render_template('options.html')
 
 @app.route('/create_or_update_playlist')
 def create_or_update_playlist():
-    spotify_user_id = request.args.get('spotify_user_id')
-    access_token = get_access_token_from_db(spotify_user_id)
-    
+    access_token = os.getenv('token')
     if not access_token:
         return redirect(url_for('login'))
 
     sp = spotipy.Spotify(auth=access_token)
     
-    try:
-        # Fetch the user's Spotify ID
-        user_profile = sp.current_user()
-        spotify_user_id = user_profile['id']
+    # Fetch the user's Spotify ID
+    user_profile = sp.current_user()
+    spotify_user_id = user_profile['id']
 
-        playlist_id = get_playlist_id(sp, spotify_user_id)
-        playlist_name = None
-        playlist_url = None
+    playlist_id = get_playlist_id(sp, spotify_user_id)
+    playlist_name = None
+    playlist_url = None
 
-        if playlist_id:
-            playlist = sp.playlist(playlist_id)
-            playlist_name = playlist['name']
-            playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
+    if playlist_id:
+        playlist = sp.playlist(playlist_id)
+        playlist_name = playlist['name']
+        playlist_url = playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
-        # Check if the user is signed up for automatic updates
-        user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
-        signed_up_for_auto_update = user.get('signed_up_for_auto_update', False)
+    # Check if the user is signed up for automatic updates
+    user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
+    signed_up_for_auto_update = user is not None
 
-        return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name, playlist_url=playlist_url, signed_up_for_auto_update=signed_up_for_auto_update)
-    
-    except spotipy.exceptions.SpotifyException as e:
-        print(f"Error fetching user data: {e}")
-        return redirect(url_for('login'))
+    return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name,playlist_url=playlist_url, signed_up_for_auto_update=signed_up_for_auto_update)
 
 @app.route('/create_playlist')
 def create_playlist():
-    spotify_user_id = request.args.get('spotify_user_id')
-    access_token = get_access_token_from_db(spotify_user_id)
-
+    access_token = os.getenv('token')
     if not access_token:
         return redirect(url_for('login'))
 
@@ -217,9 +119,7 @@ def create_playlist():
 
 @app.route('/update_playlist')
 def update_playlist():
-    spotify_user_id = request.args.get('spotify_user_id')
-    access_token = get_access_token_from_db(spotify_user_id)
-
+    access_token = os.getenv('token')
     if not access_token:
         return redirect(url_for('login'))
 
@@ -242,14 +142,12 @@ def update_playlist():
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
         return render_template('updated_playlist.html', message=message, playlist_exists=True, playlist_name=playlist_name, playlist_url=playlist_url)
     else:
-        message = "No existing playlist to update."
+        message = f"No existing playlist to update."
         return render_template('options.html', message=message)
 
 @app.route('/delete_playlist')
 def delete_playlist():
-    spotify_user_id = request.args.get('spotify_user_id')
-    access_token = get_access_token_from_db(spotify_user_id)
-
+    access_token = os.getenv('token')
     if not access_token:
         return redirect(url_for('login'))
 
@@ -271,18 +169,17 @@ def delete_playlist():
 
 @app.route('/logout')
 def logout():
-    # Clear the user_id from the request arguments
+    # Clear the token from the environment variable (optional)
+    os.environ.pop('token', None)
     return redirect(url_for('index'))
 
 @app.route('/signup_auto_update')
 def signup_auto_update():
-    spotify_user_id = request.args.get('spotify_user_id')
-    access_token = get_access_token_from_db(spotify_user_id)
-    refresh_token = get_refresh_token_from_db(spotify_user_id)
-
+    access_token = os.getenv('token')
+    refresh_token = os.getenv('refresh_token')
     if not access_token:
         return redirect(url_for('login'))
-
+    
     sp = spotipy.Spotify(auth=access_token)
     user_profile = sp.current_user()
     spotify_user_id = user_profile['id']
@@ -293,7 +190,7 @@ def signup_auto_update():
     if user:
         mongo.db.users.update_one(
             {"spotify_user_id": spotify_user_id},
-            {"$set": {"access_token": access_token, "refresh_token": refresh_token, "signed_up_for_auto_update": True}}
+            {"$set": {"access_token": access_token, "refresh_token": refresh_token}}
         )
         message = "You have already signed up for the automatic updates."
     else:
@@ -302,7 +199,6 @@ def signup_auto_update():
             access_token=access_token,
             refresh_token=refresh_token
         )
-        new_user.to_dict()["signed_up_for_auto_update"] = True
         mongo.db.users.insert_one(new_user.to_dict())
         message = "You have successfully signed up for automatic updates."
 
@@ -326,11 +222,10 @@ def signup_auto_update():
 
     return render_template('signed_up_auto_update.html', message=message, playlist_url=playlist_url)
 
+
 @app.route('/opt_out_auto_update')
 def opt_out_auto_update():
-    spotify_user_id = request.args.get('spotify_user_id')
-    access_token = get_access_token_from_db(spotify_user_id)
-
+    access_token = os.getenv('token')
     if not access_token:
         return redirect(url_for('login'))
 
@@ -341,12 +236,9 @@ def opt_out_auto_update():
     spotify_user_id = user_profile['id']
 
     # Delete the user from the MongoDB collection
-    result = mongo.db.users.update_one(
-        {"spotify_user_id": spotify_user_id},
-        {"$set": {"signed_up_for_auto_update": False}}
-    )
+    result = mongo.db.users.delete_one({"spotify_user_id": spotify_user_id})
 
-    if result.modified_count > 0:
+    if result.deleted_count > 0:
         message = "You have successfully opted out of automatic updates."
     else:
         message = "No record found to delete or you have already opted out."
@@ -365,26 +257,19 @@ def show_users():
     # Render the list of users in an HTML template
     return render_template('show_users.html', users=user_list)
 
-def refresh_access_token(user):
+def refresh_access_token(refresh_token):
     spotify_request_access_token_url = 'https://accounts.spotify.com/api/token'
     body = {
         'grant_type': 'refresh_token',
-        'refresh_token': user['refresh_token'],
+        'refresh_token': refresh_token,
         'client_id': os.getenv('SPOTIPY_CLIENT_ID'),
         'client_secret': os.getenv('SPOTIPY_CLIENT_SECRET')
     }
     response = requests.post(spotify_request_access_token_url, data=body)
     if response.status_code == 200:
-        tokens = response.json()
-        return tokens.get('access_token')
+        return response.json()
     else:
         raise Exception('Failed to refresh Access token')
-
-def get_refresh_token_from_db(spotify_user_id):
-    user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
-    if user:
-        return user.get('refresh_token')
-    return None
 
 def get_playlist_id(sp, user_id, playlist_prefix='My Monthly Top Tracks'):
     playlists = sp.user_playlists(user_id, limit=50)
@@ -403,8 +288,11 @@ def run_monthly_update():
 
         try:
             # Refresh the access token if needed
-            new_access_token = refresh_access_token(user)
-            sp = spotipy.Spotify(auth=new_access_token)
+            new_tokens = refresh_access_token(user.refresh_token)
+            access_token = new_tokens.get('access_token', user.access_token)
+            if access_token != user.access_token:
+                mongo.db.users.update_one({"spotify_user_id": user.spotify_user_id}, {"$set": {"access_token": access_token}})
+            sp = spotipy.Spotify(auth=access_token)
             update_user_playlist(sp, user.spotify_user_id)
             successful_updates.append(user.spotify_user_id)
         except Exception as e:
@@ -426,11 +314,16 @@ def update_user_playlist(sp, spotify_user_id):
 
     playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
     if playlist_id:
-        sp.user_playlist_change_details(spotify_user_id, playlist_id, name=playlist_name, description=playlist_description)
-        sp.playlist_replace_items(playlist_id, top_tracks)
+        message = f"Playlist '{playlist_name}' already exists."
+        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
     else:
+        results = sp.current_user_top_tracks(time_range='short_term', limit=50)
+        top_tracks = [track['uri'] for track in results['items']]
         playlist = sp.user_playlist_create(spotify_user_id, playlist_name, public=True, description=playlist_description)
         sp.playlist_add_items(playlist['id'], top_tracks)
+        playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
+        message = f"Playlist '{playlist_name}' created successfully!"
+        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 5000))
