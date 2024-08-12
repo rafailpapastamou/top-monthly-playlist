@@ -5,6 +5,8 @@ import urllib.parse
 import uuid
 import requests
 from flask_pymongo import PyMongo
+import datetime
+from dateutil.relativedelta import relativedelta
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key')
@@ -58,6 +60,11 @@ def index():
             if user:
                 new_access_token = refresh_access_token(user)
                 if new_access_token:
+                    # Update the token in the database
+                    mongo.db.users.update_one(
+                        {"spotify_user_id": spotify_user_id},
+                        {"$set": {"access_token": new_access_token}}
+                    )
                     return redirect(url_for('create_or_update_playlist', spotify_user_id=spotify_user_id))
             return redirect(url_for('login'))
 
@@ -152,24 +159,29 @@ def create_or_update_playlist():
 
     sp = spotipy.Spotify(auth=access_token)
     
-    # Fetch the user's Spotify ID
-    user_profile = sp.current_user()
-    spotify_user_id = user_profile['id']
+    try:
+        # Fetch the user's Spotify ID
+        user_profile = sp.current_user()
+        spotify_user_id = user_profile['id']
 
-    playlist_id = get_playlist_id(sp, spotify_user_id)
-    playlist_name = None
-    playlist_url = None
+        playlist_id = get_playlist_id(sp, spotify_user_id)
+        playlist_name = None
+        playlist_url = None
 
-    if playlist_id:
-        playlist = sp.playlist(playlist_id)
-        playlist_name = playlist['name']
-        playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
+        if playlist_id:
+            playlist = sp.playlist(playlist_id)
+            playlist_name = playlist['name']
+            playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
 
-    # Check if the user is signed up for automatic updates
-    user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
-    signed_up_for_auto_update = user.get('signed_up_for_auto_update', False)
+        # Check if the user is signed up for automatic updates
+        user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
+        signed_up_for_auto_update = user.get('signed_up_for_auto_update', False)
 
-    return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name, playlist_url=playlist_url, signed_up_for_auto_update=signed_up_for_auto_update)
+        return render_template('options.html', playlist_exists=bool(playlist_id), playlist_name=playlist_name, playlist_url=playlist_url, signed_up_for_auto_update=signed_up_for_auto_update)
+    
+    except spotipy.exceptions.SpotifyException as e:
+        print(f"Error fetching user data: {e}")
+        return redirect(url_for('login'))
 
 @app.route('/create_playlist')
 def create_playlist():
@@ -363,7 +375,8 @@ def refresh_access_token(user):
     }
     response = requests.post(spotify_request_access_token_url, data=body)
     if response.status_code == 200:
-        return response.json().get('access_token')
+        tokens = response.json()
+        return tokens.get('access_token')
     else:
         raise Exception('Failed to refresh Access token')
 
