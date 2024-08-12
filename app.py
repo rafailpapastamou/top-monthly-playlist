@@ -236,6 +236,7 @@ def signup_auto_update():
             {"spotify_user_id": spotify_user_id},
             {"$set": {"access_token": access_token, "refresh_token": refresh_token}}
         )
+        message = "You have already signed up for the automatic updates."
     else:
         new_user = User(
             spotify_user_id=spotify_user_id,
@@ -243,8 +244,10 @@ def signup_auto_update():
             refresh_token=refresh_token
         )
         mongo.db.users.insert_one(new_user.to_dict())
+        message = "You have successfully signed up for automatic updates."
 
-    return redirect(url_for('create_or_update_playlist'))
+    return render_template('signed_up_auto_complete.html', message=message)
+
 
 @app.route('/opt_out_auto_update')
 def opt_out_auto_update():
