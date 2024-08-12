@@ -59,7 +59,7 @@ def index():
     
     # If signed in, create the Spotify client
     spotify = spotipy.Spotify(auth_manager=auth_manager)
-    return render_template('options.html')
+    return render_template('create_or_update_playlist.html')
 
 @app.route('/login')
 def login():
