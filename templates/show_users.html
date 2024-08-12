@@ -3,45 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Users in Database</title>
-    <link
-      rel="icon"
-      href="{{ url_for('static', filename='spotify.svg') }}"
-      type="image/x-icon"
-    />
-    <style>
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 20px 0;
-        font-size: 1em;
-        text-align: left;
-      }
-      table th,
-      table td {
-        padding: 12px;
-        border: 1px solid #ddd;
-      }
-      table th {
-        background-color: #f4f4f4;
-      }
-    </style>
+    <title>Show Users</title>
   </head>
   <body>
-    <h1>Users in Database</h1>
-    <table>
+    <h1>Users</h1>
+    <table border="1">
       <tr>
-        <th>ID</th>
         <th>Spotify User ID</th>
         <th>Access Token</th>
-        <th>Signed Up for Auto Update</th>
+        <th>Refresh Token</th>
       </tr>
       {% for user in users %}
       <tr>
-        <td>{{ user.id }}</td>
-        <td>{{ user.spotify_user_id }}</td>
-        <td>{{ user.access_token }}</td>
-        <td>{{ user.signed_up_for_auto_update }}</td>
+        <td>{{ user['spotify_user_id'] }}</td>
+        <td>{{ user['access_token'] }}</td>
+        <td>{{ user['refresh_token'] }}</td>
       </tr>
       {% endfor %}
     </table>
