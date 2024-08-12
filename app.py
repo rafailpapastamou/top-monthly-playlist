@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, request, render_template, jsonify
+from flask import Flask, redirect, url_for, request, render_template, jsonify, logging
 import spotipy
 import os
 import datetime
@@ -86,8 +86,10 @@ def get_access_token(authorization_code: str):
     }
     response = requests.post(spotify_request_access_token_url, data=body)
     if response.status_code == 200:
+        logging.debug("Successfully obtained access and refresh tokens.")
         return response.json()
     else:
+        logging.error(f"Failed to obtain access token: {response.content}")
         raise Exception('Failed to obtain Access token')
 
 @app.route('/callback')
@@ -97,6 +99,10 @@ def callback():
     
     # Store access token in environment variable
     os.environ['token'] = credentials['access_token']
+    
+    refresh_token = credentials.get('refresh_token')
+    if refresh_token:
+        os.environ['refresh_token'] = refresh_token
 
     return redirect(url_for('create_or_update_playlist'))
 
