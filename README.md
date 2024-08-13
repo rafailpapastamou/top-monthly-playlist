@@ -4,6 +4,7 @@
   <img src="https://github.com/rafailpapastamou/spotify-top-monthly-playlist/blob/master/static/spotify.svg" width="20%">
 </p>
 This app allows you to create a Spotify playlist with your top monthly songs automatically.
+❗ The website might be inactive and it takes about 50 seconds for it to restart because it's deployed with the free tier on Render ❗
 
 ## Features
 
