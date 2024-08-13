@@ -1,5 +1,8 @@
 # Spotify Top Monthly Playlist Creator
 
+<p align="center">
+  <img src="https://github.com/rafailpapastamou/spotify-top-monthly-playlist/blob/master/static/spotify.svg" width="20%">
+</p>
 This app allows you to create a Spotify playlist with your top monthly songs automatically.
 
 ## Features
@@ -9,6 +12,31 @@ This app allows you to create a Spotify playlist with your top monthly songs aut
 - The user can sign up for the automated updates of his/her/its playlist where every 1st of the month it gets auto-updated
 
 ## Screenshots
+
+The login page
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/rafailpapastamou/spotify-top-monthly-playlist/blob/master/Screenshots/login-page.png" width="100%">
+</div>
+<br>
+The main page
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/rafailpapastamou/spotify-top-monthly-playlist/blob/master/Screenshots/main-page.png" width="100%">
+</div>
+<br>
+The page after succcessfully creating a playlist
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/rafailpapastamou/spotify-top-monthly-playlist/blob/master/Screenshots/successfully-created-playlist-page.png" width="100%">
+</div>
+<br>
+The main page of a user that already has a playlist created
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/rafailpapastamou/spotify-top-monthly-playlist/blob/master/Screenshots/main-page-for-old-user.png" width="100%">
+</div>
+<br>
+The page after deleting the playlist
+<div style="display: flex; justify-content: space-between;">
+  <img src="https://github.com/rafailpapastamou/spotify-top-monthly-playlist/blob/master/Screenshots/deleted-playlist-page.png" width="100%">
+</div>
 
 ## Website Link
 
@@ -21,11 +49,11 @@ The app uses the free tier of [Render](https://render.com/) to be deployed so if
 - HTML
 - CSS
 - [Render](https://render.com/)
+- [MongoDB](https://www.mongodb.com/)
 
 ## Resources
 
-- https://shubham13596.medium.com/using-spotify-web-api-in-flask-c28bd4fd47b6
-- https://techkoalainsights.com/sqlalchemy-with-python-flask-089ba97c4612
+- https://github.com/spotipy-dev/spotipy/tree/master
 
 ## Contributing
 
