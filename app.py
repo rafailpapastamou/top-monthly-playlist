@@ -241,7 +241,7 @@ def signup_auto_update():
     playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
     playlist_description = "This playlist was created automatically - https://spotify-top-monthly-playlist.onrender.com/."
 
-    playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
+    playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix="My Monthly Top Tracks")
     if playlist_id:
         message = f"Playlist '{playlist_name}' already exists."
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
