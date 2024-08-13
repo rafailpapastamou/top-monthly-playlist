@@ -243,6 +243,8 @@ def signup_auto_update():
 
     playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix="My Monthly Top Tracks")
     if playlist_id:
+        results = sp.current_user_top_tracks(time_range='short_term', limit=50)
+        top_tracks = [track['uri'] for track in results['items']]
         sp.user_playlist_change_details(spotify_user_id, playlist_id, name=playlist_name, description=playlist_description)
         sp.playlist_replace_items(playlist_id, top_tracks)
         message = f"Playlist '{playlist_name}' 'created' successfully!"
