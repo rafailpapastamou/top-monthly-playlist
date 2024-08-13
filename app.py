@@ -204,54 +204,39 @@ def delete_playlist():
 
 @app.route('/signup_auto_update')
 def signup_auto_update():
-    # cache_handler = spotipy.cache_handler.FlaskSessionCacheHandler(session)
-    # auth_manager = spotipy.oauth2.SpotifyOAuth(cache_handler=cache_handler)
-    # if not auth_manager.validate_token(cache_handler.get_cached_token()):
-    #     return redirect('/')
+    cache_handler = spotipy.cache_handler.FlaskSessionCacheHandler(session)
+    auth_manager = spotipy.oauth2.SpotifyOAuth(cache_handler=cache_handler)
+    
+    if not auth_manager.validate_token(cache_handler.get_cached_token()):
+        return redirect('/')
 
-    # sp = spotipy.Spotify(auth_manager=auth_manager)
-    # user_profile = sp.current_user()
-    # spotify_user_id = user_profile['id']
+    sp = spotipy.Spotify(auth_manager=auth_manager)
+    user_profile = sp.current_user()
+    spotify_user_id = user_profile['id']
 
-    # # Check if the user is already signed up
-    # user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
+    token_info = cache_handler.get_cached_token()
+    access_token = token_info['access_token']
+    refresh_token = token_info['refresh_token']
 
-    # if user:
-    #     mongo.db.users.update_one(
-    #         {"spotify_user_id": spotify_user_id},
-    #         {"$set": {"access_token": access_token, "refresh_token": refresh_token}}
-    #     )
-    #     message = "You have already signed up for the automatic updates."
-    # else:
-    #     new_user = User(
-    #         spotify_user_id=spotify_user_id,
-    #         access_token=access_token,
-    #         refresh_token=refresh_token
-    #     )
-    #     mongo.db.users.insert_one(new_user.to_dict())
-    #     message = "You have successfully signed up for automatic updates."
+    # Check if the user is already signed up
+    user = mongo.db.users.find_one({"spotify_user_id": spotify_user_id})
 
-    # now = datetime.datetime.now()
-    # last_month = now - relativedelta(months=1)
-    # playlist_name = f"My Monthly Top Tracks - {last_month.strftime('%B %Y')}"
-    # playlist_description = "This playlist was created automatically - https://spotify-top-monthly-playlist.onrender.com/."
+    if user:
+        mongo.db.users.update_one(
+            {"spotify_user_id": spotify_user_id},
+            {"$set": {"access_token": access_token, "refresh_token": refresh_token}}
+        )
+        message = "You have already signed up for automatic updates."
+    else:
+        new_user = User(
+            spotify_user_id=spotify_user_id,
+            access_token=access_token,
+            refresh_token=refresh_token
+        )
+        mongo.db.users.insert_one(new_user.to_dict())
+        message = "You have successfully signed up for automatic updates."
 
-    # playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
-    # if playlist_id:
-    #     message = f"Playlist '{playlist_name}' already exists."
-    #     playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
-    # else:
-    #     results = sp.current_user_top_tracks(time_range='short_term', limit=50)
-    #     top_tracks = [track['uri'] for track in results['items']]
-    #     playlist = sp.user_playlist_create(spotify_user_id, playlist_name, public=True, description=playlist_description)
-    #     sp.playlist_add_items(playlist['id'], top_tracks)
-    #     playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
-    #     message = f"Playlist '{playlist_name}' created successfully!"
-    #     playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
-
-    # return render_template('signed_up_auto_update.html', message=message, playlist_url=playlist_url)
-    return None
-
+    return render_template('signed_up_auto_update.html', message=message)
 
 @app.route('/opt_out_auto_update')
 def opt_out_auto_update():
@@ -320,9 +305,16 @@ def run_monthly_update():
         try:
             # Refresh the access token if needed
             new_tokens = refresh_access_token(user.refresh_token)
-            access_token = new_tokens.get('access_token', user.access_token)
-            if access_token != user.access_token:
-                mongo.db.users.update_one({"spotify_user_id": user.spotify_user_id}, {"$set": {"access_token": access_token}})
+            access_token = new_tokens.get('access_token')
+            refresh_token = new_tokens.get('refresh_token', user.refresh_token)  # Update the refresh token if it changes
+
+            # Update tokens in the database if they've changed
+            if access_token != user.access_token or refresh_token != user.refresh_token:
+                mongo.db.users.update_one(
+                    {"spotify_user_id": user.spotify_user_id},
+                    {"$set": {"access_token": access_token, "refresh_token": refresh_token}}
+                )
+
             sp = spotipy.Spotify(auth=access_token)
             update_user_playlist(sp, user.spotify_user_id)
             successful_updates.append(user.spotify_user_id)
