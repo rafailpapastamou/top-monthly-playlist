@@ -247,7 +247,7 @@ def signup_auto_update():
         top_tracks = [track['uri'] for track in results['items']]
         sp.user_playlist_change_details(spotify_user_id, playlist_id, name=playlist_name, description=playlist_description)
         sp.playlist_replace_items(playlist_id, top_tracks)
-        message = f"Playlist '{playlist_name}' 'created' successfully!"
+        message = f"Playlist '{playlist_name}' created successfully!"
         playlist_url = f"https://open.spotify.com/playlist/{playlist_id}"
     else:
         results = sp.current_user_top_tracks(time_range='short_term', limit=50)
@@ -282,18 +282,6 @@ def opt_out_auto_update():
         message = "No record found to delete or you have already opted out."
 
     return render_template('opt_out.html', message=message)
-
-# For debugging and testing purposes
-@app.route('/show_users')
-def show_users():
-    # Fetch all users from the MongoDB collection
-    users = mongo.db.users.find()  # This returns a cursor
-
-    # Convert the cursor to a list of user dictionaries
-    user_list = [user for user in users]
-
-    # Render the list of users in an HTML template
-    return render_template('show_users.html', users=user_list)
 
 def refresh_access_token(refresh_token):
     spotify_request_access_token_url = 'https://accounts.spotify.com/api/token'
