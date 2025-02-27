@@ -133,7 +133,7 @@ def create_playlist():
     spotify_user_id = user_profile['id']
 
     playlist_name = f"My Monthly Top Tracks"
-    playlist_description = "This playlist was created automatically - https://spotify-top-monthly-playlist.onrender.com/."
+    playlist_description = "This playlist was created automatically"
 
     playlist_id = get_playlist_id(sp, spotify_user_id, playlist_prefix=playlist_name)
     if playlist_id:
@@ -166,7 +166,7 @@ def update_playlist():
     results = sp.current_user_top_tracks(time_range='short_term', limit=50)
     top_tracks = [track['uri'] for track in results['items']]
     playlist_name = f"My Monthly Top Tracks"
-    playlist_description = "This playlist was created automatically - https://spotify-top-monthly-playlist.onrender.com/."
+    playlist_description = "This playlist was created automatically"
 
     playlist_id = get_playlist_id(sp, spotify_user_id)
     if playlist_id:
